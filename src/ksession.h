@@ -99,7 +99,8 @@ signals:
     void changedKeyBindings(QString kb);
 
     void titleChanged();
-
+    void matchFound(int startColumn, int startLine, int endColumn, int endLine);
+    void noMatchFound();
 
 public slots:
     /*! Set named key binding for given widget
@@ -123,6 +124,8 @@ public slots:
     // Send some text to terminal
     void sendKey(int rep, int key, int mod) const;
 
+    // Search history
+    void search(const QString &regexp, int startLine = 0, int startColumn = 0, bool forwards = true );
 
 protected slots:
     void sessionFinished();
