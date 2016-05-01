@@ -330,6 +330,11 @@ public:
      */
     QString foregroundProcessName();
 
+    /**
+     * Returns the current working directory of the process.
+     */
+    QString currentDir();
+
     /** Returns the terminal session's window size in lines and columns. */
     QSize size();
     /**
