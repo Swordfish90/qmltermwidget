@@ -101,6 +101,9 @@ class KONSOLEPRIVATE_EXPORT TerminalDisplay : public QQuickPaintedItem
    Q_PROPERTY(bool antialiasText        READ antialias       WRITE setAntialias)
    Q_PROPERTY(QStringList availableColorSchemes READ availableColorSchemes NOTIFY availableColorSchemesChanged)
 
+   Q_PROPERTY(bool blinkingCursor        READ blinkingCursor       WRITE setBlinkingCursor)
+   Q_PROPERTY(bool blinkingTextEnabled        WRITE setBlinkingTextEnabled)
+
 public:
     /** Constructs a new terminal display widget with the specified parent. */
     TerminalDisplay(QQuickItem *parent=0);
