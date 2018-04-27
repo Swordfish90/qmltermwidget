@@ -918,112 +918,174 @@ QKeyEvent * Vt102Emulation::remapKeyModifiersForMac(QKeyEvent *event) {
   }
 
   QString eventText = event->text();
+  QString eventTextShift = eventText;
   int eventKey = event->key();
   // disable dead key
   bool isAscii = true;
+  bool isAlphabet = true;
   switch (event->nativeVirtualKey()) {
     case kVK_ANSI_B:
-    eventText = "b";
-    eventKey = Qt::Key_B;
-    break;
+      eventText = "b";
+      eventKey = Qt::Key_B;
+      break;
     case kVK_ANSI_C:
-    eventText = "c";
-    eventKey = Qt::Key_C;
-    break;
+      eventText = "c";
+      eventKey = Qt::Key_C;
+      break;
     case kVK_ANSI_D:
-    eventText = "d";
-    eventKey = Qt::Key_D;
-    break;
+      eventText = "d";
+      eventKey = Qt::Key_D;
+      break;
     case kVK_ANSI_E:
-    eventText = "e";
-    eventKey = Qt::Key_E;
-    break;
+      eventText = "e";
+      eventKey = Qt::Key_E;
+      break;
     case kVK_ANSI_F:
-    eventText = "f";
-    eventKey = Qt::Key_F;
-    break;
+      eventText = "f";
+      eventKey = Qt::Key_F;
+      break;
     case kVK_ANSI_G:
-    eventText = "g";
-    eventKey = Qt::Key_G;
-    break;
+      eventText = "g";
+      eventKey = Qt::Key_G;
+      break;
     case kVK_ANSI_H:
-    eventText = "h";
-    eventKey = Qt::Key_H;
-    break;
+      eventText = "h";
+      eventKey = Qt::Key_H;
+      break;
     case kVK_ANSI_I:
-    eventText = "i";
-    eventKey = Qt::Key_I;
-    break;
+      eventText = "i";
+      eventKey = Qt::Key_I;
+      break;
     case kVK_ANSI_J:
-    eventText = "j";
-    eventKey = Qt::Key_J;
-    break;
+      eventText = "j";
+      eventKey = Qt::Key_J;
+      break;
     case kVK_ANSI_K:
-    eventText = "k";
-    eventKey = Qt::Key_K;
-    break;
+      eventText = "k";
+      eventKey = Qt::Key_K;
+      break;
     case kVK_ANSI_L:
-    eventText = "l";
-    eventKey = Qt::Key_L;
-    break;
+      eventText = "l";
+      eventKey = Qt::Key_L;
+      break;
     case kVK_ANSI_M:
-    eventText = "m";
-    eventKey = Qt::Key_M;
-    break;
+      eventText = "m";
+      eventKey = Qt::Key_M;
+      break;
     case kVK_ANSI_N:
-    eventText = "n";
-    eventKey = Qt::Key_N;
-    break;
+      eventText = "n";
+      eventKey = Qt::Key_N;
+      break;
     case kVK_ANSI_O:
-    eventText = "o";
-    eventKey = Qt::Key_O;
-    break;
+      eventText = "o";
+      eventKey = Qt::Key_O;
+      break;
     case kVK_ANSI_P:
-    eventText = "p";
-    eventKey = Qt::Key_P;
-    break;
+      eventText = "p";
+      eventKey = Qt::Key_P;
+      break;
     case kVK_ANSI_Q:
-    eventText = "q";
-    eventKey = Qt::Key_Q;
-    break;
+      eventText = "q";
+      eventKey = Qt::Key_Q;
+      break;
     case kVK_ANSI_R:
-    eventText = "r";
-    eventKey = Qt::Key_R;
-    break;
+      eventText = "r";
+      eventKey = Qt::Key_R;
+      break;
     case kVK_ANSI_S:
-    eventText = "s";
-    eventKey = Qt::Key_S;
-    break;
+      eventText = "s";
+      eventKey = Qt::Key_S;
+      break;
     case kVK_ANSI_T:
-    eventText = "t";
-    eventKey = Qt::Key_T;
-    break;
+      eventText = "t";
+      eventKey = Qt::Key_T;
+      break;
     case kVK_ANSI_U:
-    eventText = "u";
-    eventKey = Qt::Key_U;
-    break;
+      eventText = "u";
+      eventKey = Qt::Key_U;
+      break;
     case kVK_ANSI_V:
-    eventText = "v";
-    eventKey = Qt::Key_V;
-    break;
+      eventText = "v";
+      eventKey = Qt::Key_V;
+      break;
     case kVK_ANSI_W:
-    eventText = "w";
-    eventKey = Qt::Key_W;
-    break;
+      eventText = "w";
+      eventKey = Qt::Key_W;
+      break;
     case kVK_ANSI_X:
-    eventText = "x";
-    eventKey = Qt::Key_X;
-    break;
+      eventText = "x";
+      eventKey = Qt::Key_X;
+      break;
     case kVK_ANSI_Y:
-    eventText = "y";
-    eventKey = Qt::Key_Y;
-    break;
+      eventText = "y";
+      eventKey = Qt::Key_Y;
+      break;
     case kVK_ANSI_Z:
-    eventText = "z";
-    eventKey = Qt::Key_Z;
-    break;
+      eventText = "z";
+      eventKey = Qt::Key_Z;
+      break;
+    case kVK_ANSI_Comma:
+      isAlphabet = false;
+      eventText = ",";
+      eventTextShift = "<";
+      eventKey = Qt::Key_Comma;
+      break;
+    case kVK_ANSI_Period:
+      isAlphabet = false;
+      eventText = ".";
+      eventTextShift = ">";
+      eventKey = Qt::Key_Period;
+      break;
+    case kVK_ANSI_Slash:
+      isAlphabet = false;
+      eventText = "/";
+      eventTextShift = "?";
+      eventKey = Qt::Key_Slash;
+      break;
+    case kVK_ANSI_Semicolon:
+      isAlphabet = false;
+      eventText = ";";
+      eventTextShift = ":";
+      eventKey = Qt::Key_Semicolon;
+      break;
+    case kVK_ANSI_Quote:
+      isAlphabet = false;
+      eventText = "'";
+      eventTextShift = "\"";
+      eventKey = Qt::Key_QuoteLeft;
+      break;
+    case kVK_ANSI_LeftBracket:
+      isAlphabet = false;
+      eventText = "[";
+      eventTextShift = "{";
+      eventKey = Qt::Key_BracketLeft;
+      break;
+    case kVK_ANSI_RightBracket:
+      isAlphabet = false;
+      eventText = "]";
+      eventTextShift = "}";
+      eventKey = Qt::Key_BracketRight;
+      break;
+    case kVK_ANSI_Backslash:
+      isAlphabet = false;
+      eventText = "\\";
+      eventTextShift = "|";
+      eventKey = Qt::Key_Backslash;
+      break;
+    case kVK_ANSI_Minus:
+      isAlphabet = false;
+      eventText = "-";
+      eventTextShift = "_";
+      eventKey = Qt::Key_Minus;
+      break;
+    case kVK_ANSI_Equal:
+      isAlphabet = false;
+      eventText = "=";
+      eventTextShift = "+";
+      eventKey = Qt::Key_Equal;
+      break;
     default:
-    isAscii = false;
+      isAscii = false;
   }
   // a's vk code is 0, a special case
   if (event->nativeVirtualKey() == kVK_ANSI_A && event->key() == Qt::Key_A) {
@@ -1032,7 +1094,11 @@ QKeyEvent * Vt102Emulation::remapKeyModifiersForMac(QKeyEvent *event) {
     isAscii = true;
   }
   if (modifiers & Qt::ShiftModifier && isAscii) {
-    eventText = eventText.toUpper();
+    if (isAlphabet) {
+      eventText = eventText.toUpper();
+    } else {
+      eventText = eventTextShift;
+    }
   }
   return new QKeyEvent(QEvent::None, eventKey, modifiers,
                       event->nativeScanCode(), event->nativeVirtualKey(), event->nativeModifiers(),
