@@ -3,3 +3,4 @@
 /QMLTermWidget/
 moc_*.cpp
 moc_*.h
+/.qmake.stash
