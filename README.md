@@ -1,4 +1,4 @@
-# QMLTermWidget
+# QMLTermWidget for windows
 
 ## Description
 This project is a QML port of qtermwidget. It is written to be as close as possible to the upstream project in order to make cooperation possible.
