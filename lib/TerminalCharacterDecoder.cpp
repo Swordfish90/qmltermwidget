@@ -19,6 +19,9 @@
     02110-1301  USA.
 */
 
+// System
+#include <cwctype> /* std::iswspace */
+
 // Own
 #include "TerminalCharacterDecoder.h"
 
