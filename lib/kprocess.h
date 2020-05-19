@@ -30,14 +30,12 @@
 #ifndef KPROCESS_H
 #define KPROCESS_H
 
-//#include <kdecore_export.h>
-
 #include <QProcess>
 
-class KProcessPrivate;
+class KTermProcessPrivate;
 
 /**
- * \class KProcess kprocess.h <KProcess>
+ * \class KTermProcess KTermProcess.h
  *
  * Child process invocation, monitoring and control.
  *
@@ -49,10 +47,10 @@ class KProcessPrivate;
  *
  * @author Oswald Buddenhagen <ossi@kde.org>
  **/
-class KProcess : public QProcess
+class KTermProcess : public QProcess
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(KProcess)
+    Q_DECLARE_PRIVATE(KTermProcess)
 
 public:
 
@@ -61,10 +59,10 @@ public:
      */
     enum OutputChannelMode {
         SeparateChannels = QProcess::SeparateChannels,
-            /**< Standard output and standard error are handled by KProcess
+            /**< Standard output and standard error are handled by KTermProcess
                  as separate channels */
         MergedChannels = QProcess::MergedChannels,
-            /**< Standard output and standard error are handled by KProcess
+            /**< Standard output and standard error are handled by KTermProcess
                  as one channel */
         ForwardedChannels = QProcess::ForwardedChannels,
             /**< Both standard output and standard error are forwarded
@@ -77,12 +75,12 @@ public:
     /**
      * Constructor
      */
-    explicit KProcess(QObject *parent = 0);
+    explicit KTermProcess(QObject *parent = 0);
 
     /**
      * Destructor
      */
-    virtual ~KProcess();
+    virtual ~KTermProcess();
 
     /**
      * Set how to handle the output channels of the child process.
@@ -172,7 +170,7 @@ public:
      *
      * For example, doing an "ls -l /usr/local/bin" can be achieved by:
      *  \code
-     *  KProcess p;
+     *  KTermProcess p;
      *  p << "ls" << "-l" << "/usr/local/bin";
      *  ...
      *  \endcode
@@ -180,17 +178,17 @@ public:
      * This function must be called before starting the process, obviously.
      *
      * @param arg the argument to add
-     * @return a reference to this KProcess
+     * @return a reference to this KTermProcess
      */
-    KProcess &operator<<(const QString& arg);
+    KTermProcess &operator<<(const QString& arg);
 
     /**
      * @overload
      *
      * @param args the arguments to add
-     * @return a reference to this KProcess
+     * @return a reference to this KTermProcess
      */
-    KProcess &operator<<(const QStringList& args);
+    KTermProcess &operator<<(const QStringList& args);
 
     /**
      * Clear the program and command line argument list.
@@ -206,7 +204,7 @@ public:
      * Redirections including pipes, etc. are better handled by the
      * respective functions provided by QProcess.
      *
-     * If KProcess determines that the command does not really need a
+     * If KTermProcess determines that the command does not really need a
      * shell, it will trasparently execute it without one for performance
      * reasons.
      *
@@ -285,7 +283,7 @@ public:
      * @note Currently, only the setProgram()/setShellCommand() and
      * setWorkingDirectory() parametrizations are supported.
      *
-     * The KProcess object may be re-used immediately after calling this
+     * The KTermProcess object may be re-used immediately after calling this
      * function.
      *
      * @return the PID of the started process or 0 on error
@@ -327,12 +325,12 @@ protected:
     /**
      * @internal
      */
-    KProcess(KProcessPrivate *d, QObject *parent);
+    KTermProcess(KTermProcessPrivate *d, QObject *parent);
 
     /**
      * @internal
      */
-    KProcessPrivate * const d_ptr;
+    KTermProcessPrivate * const d_ptr;
 
 private:
     // hide those
@@ -346,29 +344,29 @@ private:
 };
 
 /* ----------- kprocess_p.h ---------------- */
-class KProcessPrivate {
+class KTermProcessPrivate {
 
-    Q_DECLARE_PUBLIC(KProcess)
+    Q_DECLARE_PUBLIC(KTermProcess)
 
 protected:
-    KProcessPrivate() :
+    KTermProcessPrivate() :
         openMode(QIODevice::ReadWrite)
     {
     }
-    virtual ~KProcessPrivate()
+    virtual ~KTermProcessPrivate()
     {
     }
     void writeAll(const QByteArray &buf, int fd);
-    void forwardStd(KProcess::ProcessChannel good, int fd);
+    void forwardStd(KTermProcess::ProcessChannel good, int fd);
     void _k_forwardStdout();
     void _k_forwardStderr();
 
     QString prog;
     QStringList args;
-    KProcess::OutputChannelMode outputChannelMode;
+    KTermProcess::OutputChannelMode outputChannelMode;
     QIODevice::OpenMode openMode;
 
-    KProcess *q_ptr;
+    KTermProcess *q_ptr;
 };
 /* ------------------------------------------- */
 #endif

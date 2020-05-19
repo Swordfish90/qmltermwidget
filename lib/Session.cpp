@@ -118,7 +118,6 @@ Session::Session(QObject* parent) :
     connect( _emulation,SIGNAL(useUtf8Request(bool)),_shellProcess,SLOT(setUtf8Mode(bool)) );
 
     connect( _shellProcess,SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(done(int)) );
-    // not in kprocess anymore connect( _shellProcess,SIGNAL(done(int)), this, SLOT(done(int)) );
 
     //setup timer for monitoring session activity
     _monitorTimer = new QTimer(this);
@@ -788,123 +787,12 @@ void Session::setFlowControlEnabled(bool enabled)
 
     emit flowControlEnabledChanged(enabled);
 }
+
 bool Session::flowControlEnabled() const
 {
     return _flowControl;
 }
-//void Session::fireZModemDetected()
-//{
-//  if (!_zmodemBusy)
-//  {
-//    QTimer::singleShot(10, this, SIGNAL(zmodemDetected()));
-//    _zmodemBusy = true;
-//  }
-//}
 
-//void Session::cancelZModem()
-//{
-//  _shellProcess->sendData("\030\030\030\030", 4); // Abort
-//  _zmodemBusy = false;
-//}
-
-//void Session::startZModem(const QString &zmodem, const QString &dir, const QStringList &list)
-//{
-//  _zmodemBusy = true;
-//  _zmodemProc = new KProcess();
-//  _zmodemProc->setOutputChannelMode( KProcess::SeparateChannels );
-//
-//  *_zmodemProc << zmodem << "-v" << list;
-//
-//  if (!dir.isEmpty())
-//     _zmodemProc->setWorkingDirectory(dir);
-//
-//  _zmodemProc->start();
-//
-//  connect(_zmodemProc,SIGNAL (readyReadStandardOutput()),
-//          this, SLOT(zmodemReadAndSendBlock()));
-//  connect(_zmodemProc,SIGNAL (readyReadStandardError()),
-//          this, SLOT(zmodemReadStatus()));
-//  connect(_zmodemProc,SIGNAL (finished(int,QProcess::ExitStatus)),
-//          this, SLOT(zmodemFinished()));
-//
-//  disconnect( _shellProcess,SIGNAL(block_in(const char*,int)), this, SLOT(onReceiveBlock(const char*,int)) );
-//  connect( _shellProcess,SIGNAL(block_in(const char*,int)), this, SLOT(zmodemRcvBlock(const char*,int)) );
-//
-//  _zmodemProgress = new ZModemDialog(QApplication::activeWindow(), false,
-//                                    i18n("ZModem Progress"));
-//
-//  connect(_zmodemProgress, SIGNAL(user1Clicked()),
-//          this, SLOT(zmodemDone()));
-//
-//  _zmodemProgress->show();
-//}
-
-/*void Session::zmodemReadAndSendBlock()
-{
-  _zmodemProc->setReadChannel( QProcess::StandardOutput );
-  QByteArray data = _zmodemProc->readAll();
-
-  if ( data.count() == 0 )
-      return;
-
-  _shellProcess->sendData(data.constData(),data.count());
-}
-*/
-/*
-void Session::zmodemReadStatus()
-{
-  _zmodemProc->setReadChannel( QProcess::StandardError );
-  QByteArray msg = _zmodemProc->readAll();
-  while(!msg.isEmpty())
-  {
-     int i = msg.indexOf('\015');
-     int j = msg.indexOf('\012');
-     QByteArray txt;
-     if ((i != -1) && ((j == -1) || (i < j)))
-     {
-       msg = msg.mid(i+1);
-     }
-     else if (j != -1)
-     {
-       txt = msg.left(j);
-       msg = msg.mid(j+1);
-     }
-     else
-     {
-       txt = msg;
-       msg.truncate(0);
-     }
-     if (!txt.isEmpty())
-       _zmodemProgress->addProgressText(QString::fromLocal8Bit(txt));
-  }
-}
-*/
-/*
-void Session::zmodemRcvBlock(const char *data, int len)
-{
-  QByteArray ba( data, len );
-
-  _zmodemProc->write( ba );
-}
-*/
-/*
-void Session::zmodemFinished()
-{
-  if (_zmodemProc)
-  {
-    delete _zmodemProc;
-    _zmodemProc = 0;
-    _zmodemBusy = false;
-
-    disconnect( _shellProcess,SIGNAL(block_in(const char*,int)), this ,SLOT(zmodemRcvBlock(const char*,int)) );
-    connect( _shellProcess,SIGNAL(block_in(const char*,int)), this, SLOT(onReceiveBlock(const char*,int)) );
-
-    _shellProcess->sendData("\030\030\030\030", 4); // Abort
-    _shellProcess->sendData("\001\013\n", 3); // Try to get prompt back
-    _zmodemProgress->transferDone();
-  }
-}
-*/
 void Session::onReceiveBlock( const char * buf, int len )
 {
     _emulation->receiveData( buf, len );

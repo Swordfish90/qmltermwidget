@@ -40,7 +40,7 @@ class KPtyDevice;
 class KPtyProcessPrivate;
 
 /**
- * This class extends KProcess by support for PTYs (pseudo TTYs).
+ * This class extends KTermProcess by support for PTYs (pseudo TTYs).
  *
  * The PTY is opened as soon as the class is instantiated. Verify that
  * it was opened successfully by checking that pty()->masterFd() is not -1.
@@ -54,7 +54,7 @@ class KPtyProcessPrivate;
  *
  * @author Oswald Buddenhagen <ossi@kde.org>
  */
-class KPtyProcess : public KProcess
+class KPtyProcess : public KTermProcess
 {
     Q_OBJECT
     Q_DECLARE_PRIVATE(KPtyProcess)
@@ -155,7 +155,7 @@ private:
 // private data //
 //////////////////
 
-class KPtyProcessPrivate : public KProcessPrivate {
+class KPtyProcessPrivate : public KTermProcessPrivate {
 public:
     KPtyProcessPrivate() :
         ptyChannels(KPtyProcess::NoChannels),

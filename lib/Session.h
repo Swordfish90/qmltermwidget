@@ -32,7 +32,6 @@
 #include "History.h"
 #include "ProcessInfo.h"
 
-class KProcess;
 
 namespace Konsole {
 
@@ -562,11 +561,6 @@ private:
     int            _sessionId;
 
     QString        _initialWorkingDir;
-
-    // ZModem
-//  bool           _zmodemBusy;
-//  KProcess*      _zmodemProc;
-//  ZModemDialog*  _zmodemProgress;
 
     // Color/Font Changes by ESC Sequences
 

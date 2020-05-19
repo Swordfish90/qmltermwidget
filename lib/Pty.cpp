@@ -210,7 +210,7 @@ int Pty::start(const QString& program,
 
   pty()->setWinSize(_windowLines, _windowColumns);
 
-  KProcess::start();
+  KTermProcess::start();
 
   if (!waitForStarted())
       return -1;

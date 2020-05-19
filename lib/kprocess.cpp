@@ -47,7 +47,7 @@
 #include <stdio.h>
 #endif
 
-void KProcessPrivate::writeAll(const QByteArray &buf, int fd)
+void KTermProcessPrivate::writeAll(const QByteArray &buf, int fd)
 {
 #ifdef Q_OS_WIN
 #ifndef _WIN32_WCE
@@ -73,9 +73,9 @@ void KProcessPrivate::writeAll(const QByteArray &buf, int fd)
 #endif
 }
 
-void KProcessPrivate::forwardStd(KProcess::ProcessChannel good, int fd)
+void KTermProcessPrivate::forwardStd(KTermProcess::ProcessChannel good, int fd)
 {
-    Q_Q(KProcess);
+    Q_Q(KTermProcess);
 
     QProcess::ProcessChannel oc = q->readChannel();
     q->setReadChannel(good);
@@ -83,21 +83,21 @@ void KProcessPrivate::forwardStd(KProcess::ProcessChannel good, int fd)
     q->setReadChannel(oc);
 }
 
-void KProcessPrivate::_k_forwardStdout()
+void KTermProcessPrivate::_k_forwardStdout()
 {
 #ifndef _WIN32_WCE
-    forwardStd(KProcess::StandardOutput, STD_OUTPUT_HANDLE);
+    forwardStd(KTermProcess::StandardOutput, STD_OUTPUT_HANDLE);
 #else
-    forwardStd(KProcess::StandardOutput, (int)stdout);
+    forwardStd(KTermProcess::StandardOutput, (int)stdout);
 #endif
 }
 
-void KProcessPrivate::_k_forwardStderr()
+void KTermProcessPrivate::_k_forwardStderr()
 {
 #ifndef _WIN32_WCE
-    forwardStd(KProcess::StandardError, STD_ERROR_HANDLE);
+    forwardStd(KTermProcess::StandardError, STD_ERROR_HANDLE);
 #else
-    forwardStd(KProcess::StandardError, (int)stderr);
+    forwardStd(KTermProcess::StandardError, (int)stderr);
 #endif
 }
 
@@ -105,15 +105,15 @@ void KProcessPrivate::_k_forwardStderr()
 // public member functions //
 /////////////////////////////
 
-KProcess::KProcess(QObject *parent) :
+KTermProcess::KTermProcess(QObject *parent) :
     QProcess(parent),
-    d_ptr(new KProcessPrivate)
+    d_ptr(new KTermProcessPrivate)
 {
     d_ptr->q_ptr = this;
     setOutputChannelMode(ForwardedChannels);
 }
 
-KProcess::KProcess(KProcessPrivate *d, QObject *parent) :
+KTermProcess::KTermProcess(KTermProcessPrivate *d, QObject *parent) :
     QProcess(parent),
     d_ptr(d)
 {
@@ -121,14 +121,14 @@ KProcess::KProcess(KProcessPrivate *d, QObject *parent) :
     setOutputChannelMode(ForwardedChannels);
 }
 
-KProcess::~KProcess()
+KTermProcess::~KTermProcess()
 {
     delete d_ptr;
 }
 
-void KProcess::setOutputChannelMode(OutputChannelMode mode)
+void KTermProcess::setOutputChannelMode(OutputChannelMode mode)
 {
-    Q_D(KProcess);
+    Q_D(KTermProcess);
 
     d->outputChannelMode = mode;
     disconnect(this, SIGNAL(readyReadStandardOutput()));
@@ -147,28 +147,28 @@ void KProcess::setOutputChannelMode(OutputChannelMode mode)
     QProcess::setProcessChannelMode(QProcess::SeparateChannels);
 }
 
-KProcess::OutputChannelMode KProcess::outputChannelMode() const
+KTermProcess::OutputChannelMode KTermProcess::outputChannelMode() const
 {
-    Q_D(const KProcess);
+    Q_D(const KTermProcess);
 
     return d->outputChannelMode;
 }
 
-void KProcess::setNextOpenMode(QIODevice::OpenMode mode)
+void KTermProcess::setNextOpenMode(QIODevice::OpenMode mode)
 {
-    Q_D(KProcess);
+    Q_D(KTermProcess);
 
     d->openMode = mode;
 }
 
 #define DUMMYENV "_KPROCESS_DUMMY_="
 
-void KProcess::clearEnvironment()
+void KTermProcess::clearEnvironment()
 {
     setEnvironment(QStringList() << QString::fromLatin1(DUMMYENV));
 }
 
-void KProcess::setEnv(const QString &name, const QString &value, bool overwrite)
+void KTermProcess::setEnv(const QString &name, const QString &value, bool overwrite)
 {
     QStringList env = environment();
     if (env.isEmpty()) {
@@ -189,7 +189,7 @@ void KProcess::setEnv(const QString &name, const QString &value, bool overwrite)
     setEnvironment(env);
 }
 
-void KProcess::unsetEnv(const QString &name)
+void KTermProcess::unsetEnv(const QString &name)
 {
     QStringList env = environment();
     if (env.isEmpty()) {
@@ -208,9 +208,9 @@ void KProcess::unsetEnv(const QString &name)
         }
 }
 
-void KProcess::setProgram(const QString &exe, const QStringList &args)
+void KTermProcess::setProgram(const QString &exe, const QStringList &args)
 {
-    Q_D(KProcess);
+    Q_D(KTermProcess);
 
     d->prog = exe;
     d->args = args;
@@ -219,9 +219,9 @@ void KProcess::setProgram(const QString &exe, const QStringList &args)
 #endif
 }
 
-void KProcess::setProgram(const QStringList &argv)
+void KTermProcess::setProgram(const QStringList &argv)
 {
-    Q_D(KProcess);
+    Q_D(KTermProcess);
 
     Q_ASSERT( !argv.isEmpty() );
     d->args = argv;
@@ -231,9 +231,9 @@ void KProcess::setProgram(const QStringList &argv)
 #endif
 }
 
-KProcess &KProcess::operator<<(const QString &arg)
+KTermProcess &KTermProcess::operator<<(const QString &arg)
 {
-    Q_D(KProcess);
+    Q_D(KTermProcess);
 
     if (d->prog.isEmpty())
         d->prog = arg;
@@ -242,9 +242,9 @@ KProcess &KProcess::operator<<(const QString &arg)
     return *this;
 }
 
-KProcess &KProcess::operator<<(const QStringList &args)
+KTermProcess &KTermProcess::operator<<(const QStringList &args)
 {
-    Q_D(KProcess);
+    Q_D(KTermProcess);
 
     if (d->prog.isEmpty())
         setProgram(args);
@@ -253,9 +253,9 @@ KProcess &KProcess::operator<<(const QStringList &args)
     return *this;
 }
 
-void KProcess::clearProgram()
+void KTermProcess::clearProgram()
 {
-    Q_D(KProcess);
+    Q_D(KTermProcess);
 
     d->prog.clear();
     d->args.clear();
@@ -265,9 +265,9 @@ void KProcess::clearProgram()
 }
 
 #if 0
-void KProcess::setShellCommand(const QString &cmd)
+void KTermProcess::setShellCommand(const QString &cmd)
 {
-    Q_D(KProcess);
+    Q_D(KTermProcess);
 
     KShell::Errors err;
     d->args = KShell::splitArgs(
@@ -331,23 +331,23 @@ void KProcess::setShellCommand(const QString &cmd)
 #endif
 }
 #endif
-QStringList KProcess::program() const
+QStringList KTermProcess::program() const
 {
-    Q_D(const KProcess);
+    Q_D(const KTermProcess);
 
     QStringList argv = d->args;
     argv.prepend(d->prog);
     return argv;
 }
 
-void KProcess::start()
+void KTermProcess::start()
 {
-    Q_D(KProcess);
+    Q_D(KTermProcess);
 
     QProcess::start(d->prog, d->args, d->openMode);
 }
 
-int KProcess::execute(int msecs)
+int KTermProcess::execute(int msecs)
 {
     start();
     if (!waitForFinished(msecs)) {
@@ -359,24 +359,24 @@ int KProcess::execute(int msecs)
 }
 
 // static
-int KProcess::execute(const QString &exe, const QStringList &args, int msecs)
+int KTermProcess::execute(const QString &exe, const QStringList &args, int msecs)
 {
-    KProcess p;
+    KTermProcess p;
     p.setProgram(exe, args);
     return p.execute(msecs);
 }
 
 // static
-int KProcess::execute(const QStringList &argv, int msecs)
+int KTermProcess::execute(const QStringList &argv, int msecs)
 {
-    KProcess p;
+    KTermProcess p;
     p.setProgram(argv);
     return p.execute(msecs);
 }
 
-int KProcess::startDetached()
+int KTermProcess::startDetached()
 {
-    Q_D(KProcess);
+    Q_D(KTermProcess);
 
     qint64 pid;
     if (!QProcess::startDetached(d->prog, d->args, workingDirectory(), &pid))
@@ -385,7 +385,7 @@ int KProcess::startDetached()
 }
 
 // static
-int KProcess::startDetached(const QString &exe, const QStringList &args)
+int KTermProcess::startDetached(const QString &exe, const QStringList &args)
 {
     qint64 pid;
     if (!QProcess::startDetached(exe, args, QString(), &pid))
@@ -394,14 +394,14 @@ int KProcess::startDetached(const QString &exe, const QStringList &args)
 }
 
 // static
-int KProcess::startDetached(const QStringList &argv)
+int KTermProcess::startDetached(const QStringList &argv)
 {
     QStringList args = argv;
     QString prog = args.takeFirst();
     return startDetached(prog, args);
 }
 
-int KProcess::pid() const
+int KTermProcess::pid() const
 {
 #ifdef Q_OS_UNIX
     return (int) QProcess::pid();
