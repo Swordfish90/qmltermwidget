@@ -27,7 +27,7 @@
 #include <QtDebug>
 
 
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__) || defined(__HAIKU__)
 #define HAVE_LOGIN
 #define HAVE_LIBUTIL_H
 #endif
@@ -90,9 +90,15 @@
 #endif
 
 #ifdef HAVE_UTEMPTER
+# ifdef __HAIKU__
+/* Haiku doesn't have any of those yet, so we fake the simplest */
+#  define addToUtmp(n, h, fd) {}
+#  define removeLineFromUtmp(n, fd) {}
+# else
 extern "C" {
 # include <utempter.h>
 }
+# endif
 #else
 # include <utmp.h>
 # ifdef HAVE_UTMPX
@@ -130,7 +136,7 @@ extern "C" {
 #if defined (__FreeBSD__) || defined(__FreeBSD_kernel__) || defined (__NetBSD__) || defined (__OpenBSD__) || defined (__bsdi__) || defined(__APPLE__) || defined (__DragonFly__)
 # define _tcgetattr(fd, ttmode) ioctl(fd, TIOCGETA, (char *)ttmode)
 #else
-# if defined(_HPUX_SOURCE) || defined(__Lynx__) || defined (__CYGWIN__) || defined(__GNU__)
+# if defined(_HPUX_SOURCE) || defined(__Lynx__) || defined (__CYGWIN__) || defined(__GNU__) || defined (__HAIKU__)
 #  define _tcgetattr(fd, ttmode) tcgetattr(fd, ttmode)
 # else
 #  define _tcgetattr(fd, ttmode) ioctl(fd, TCGETS, (char *)ttmode)
@@ -140,7 +146,7 @@ extern "C" {
 #if defined (__FreeBSD__) || defined(__FreeBSD_kernel__) || defined (__NetBSD__) || defined (__OpenBSD__) || defined (__bsdi__) || defined(__APPLE__) || defined (__DragonFly__)
 # define _tcsetattr(fd, ttmode) ioctl(fd, TIOCSETA, (char *)ttmode)
 #else
-# if defined(_HPUX_SOURCE) || defined(__CYGWIN__) || defined(__GNU__)
+# if defined(_HPUX_SOURCE) || defined(__CYGWIN__) || defined(__GNU__) || defined (__HAIKU__)
 #  define _tcsetattr(fd, ttmode) tcsetattr(fd, TCSANOW, ttmode)
 # else
 #  define _tcsetattr(fd, ttmode) ioctl(fd, TCSETS, (char *)ttmode)
