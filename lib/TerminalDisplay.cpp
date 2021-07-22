@@ -154,14 +154,6 @@ const ColorEntry* TerminalDisplay::colorTable() const
 }
 void TerminalDisplay::setBackgroundColor(const QColor& color)
 {
-    _colorTable[DEFAULT_BACK_COLOR].color = color;
-    QPalette p = palette();
-      p.setColor( backgroundRole(), color ); 
-      setPalette( p );
-
-      // Avoid propagating the palette change to the scroll bar 
-      _scrollBar->setPalette( QApplication::palette() );  
-
     update();
 }
 void TerminalDisplay::setForegroundColor(const QColor& color)
