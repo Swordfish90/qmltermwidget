@@ -38,7 +38,7 @@
 #include <QDebug>
 
 KPtyProcess::KPtyProcess(QObject *parent) :
-    KProcess(new KPtyProcessPrivate, parent)
+    KTermProcess(new KPtyProcessPrivate, parent)
 {
     Q_D(KPtyProcess);
 
@@ -49,7 +49,7 @@ KPtyProcess::KPtyProcess(QObject *parent) :
 }
 
 KPtyProcess::KPtyProcess(int ptyMasterFd, QObject *parent) :
-    KProcess(new KPtyProcessPrivate, parent)
+    KTermProcess(new KPtyProcessPrivate, parent)
 {
     Q_D(KPtyProcess);
 
@@ -138,7 +138,7 @@ void KPtyProcess::setupChildProcess()
     if (d->ptyChannels & StderrChannel)
         dup2(d->pty->slaveFd(), 2);
 
-    KProcess::setupChildProcess();
+    KTermProcess::setupChildProcess();
 }
 
 //#include "kptyprocess.moc"
