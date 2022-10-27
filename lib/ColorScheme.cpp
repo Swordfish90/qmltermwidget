@@ -120,34 +120,11 @@ const char* const ColorScheme::translatedColorNames[TABLE_COLORS] =
     tr_NOOP("Color 8 (Intense)")
 };
 
-ColorScheme::ColorScheme()
+ColorScheme::ColorScheme(QObject *parent) : QObject(parent)
 {
     _table = nullptr;
     _randomTable = nullptr;
     _opacity = 1.0;
-}
-ColorScheme::ColorScheme(const ColorScheme& other)
-      : _opacity(other._opacity)
-       ,_table(nullptr)
-       ,_randomTable(nullptr)
-{
-    setName(other.name());
-    setDescription(other.description());
-
-    if ( other._table != nullptr )
-    {
-        for ( int i = 0 ; i < TABLE_COLORS ; i++ )
-            setColorTableEntry(i,other._table[i]);
-    }
-
-    if ( other._randomTable != nullptr )
-    {
-        for ( int i = 0 ; i < TABLE_COLORS ; i++ )
-        {
-            const RandomizationRange& range = other._randomTable[i];
-            setRandomizationRange(i,range.hue,range.saturation,range.value);
-        }
-    }
 }
 ColorScheme::~ColorScheme()
 {
@@ -205,6 +182,19 @@ ColorEntry ColorScheme::colorEntry(int index , uint randomSeed) const
     }
 
     return entry;
+}
+QColor ColorScheme::getColor(int index) const
+{
+    return colorEntry(index).color;
+}
+void ColorScheme::setColor(int index, QColor color)
+{
+    ColorEntry colorEntry = ColorScheme::colorEntry(index);
+    if (colorEntry.color != color) {
+        colorEntry.color = color;
+        setColorTableEntry(index, colorEntry);
+        Q_EMIT colorChanged(index);
+    }
 }
 void ColorScheme::getColorTable(ColorEntry* table , uint randomSeed) const
 {
@@ -267,7 +257,7 @@ bool ColorScheme::hasDarkBackground() const
     // so 127 is in the middle, anything less is deemed 'dark'
     return backgroundColor().value() < 127;
 }
-void ColorScheme::setOpacity(qreal opacity) { _opacity = opacity; }
+void ColorScheme::setOpacity(qreal opacity) { _opacity = opacity; opacityChanged(); }
 qreal ColorScheme::opacity() const { return _opacity; }
 
 void ColorScheme::read(const QString & fileName)
@@ -282,6 +272,21 @@ void ColorScheme::read(const QString & fileName)
     for (int i=0 ; i < TABLE_COLORS ; i++)
     {
         readColorEntry(&s, i);
+    }
+}
+
+void ColorScheme::write(const QString & fileName) const
+{
+    QSettings s(fileName, QSettings::IniFormat);
+    s.beginGroup("General");
+
+    s.setValue("Description", _description);
+    s.setValue("Opacity", _opacity);
+    s.endGroup();
+
+    for (int i=0 ; i < TABLE_COLORS ; i++)
+    {
+        writeColorEntry(&s, i, colorTable()[i]);
     }
 }
 #if 0
@@ -401,6 +406,19 @@ void ColorScheme::readColorEntry(QSettings * s , int index)
     if ( hue != 0 || value != 0 || saturation != 0 )
        setRandomizationRange( index , hue , saturation , value );
 
+    s->endGroup();
+}
+void ColorScheme::writeColorEntry(QSettings * s, int index, const ColorEntry& entry) const
+{
+    s->beginGroup(colorNameForIndex(index));
+    QStringList colorList;
+    colorList << QString::number(entry.color.red()) << QString::number(entry.color.green()) << QString::number(entry.color.blue());
+    s->setValue("Color", colorList);
+    s->setValue("Transparency", (bool)entry.transparent);
+    if (entry.fontWeight != ColorEntry::UseCurrentFormat)
+    {
+        s->setValue("Bold", entry.fontWeight == ColorEntry::Bold);
+    }
     s->endGroup();
 }
 #if 0
@@ -566,7 +584,7 @@ bool ColorSchemeManager::loadColorScheme(const QString& filePath)
 
     const QString& schemeName = info.baseName();
 
-    ColorScheme* scheme = new ColorScheme();
+    ColorScheme* scheme = new ColorScheme(this);
     scheme->setName(schemeName);
     scheme->read(filePath);
 
@@ -649,7 +667,7 @@ QString ColorSchemeManager::findColorSchemePath(const QString& name) const
 
     return path;
 }
-const ColorScheme* ColorSchemeManager::findColorScheme(const QString& name)
+const Konsole::ColorScheme* ColorSchemeManager::findColorScheme(const QString& name)
 {
     if ( name.isEmpty() )
         return defaultColorScheme();
