@@ -717,6 +717,7 @@ protected slots:
     //Renables bell noises and visuals.  Used to disable further bells for a short period of time
     //after emitting the first in a sequence of bell events.
     void enableBell();
+    void applyColorScheme();
 
 private slots:
 
@@ -893,6 +894,7 @@ private:
 
     uint _lineSpacing;
     QString _colorScheme;
+    const ColorScheme* _colorSchemeRef;
     bool _colorsInverted; // true during visual bell
 
     QSize _size;

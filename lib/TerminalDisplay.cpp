@@ -372,6 +372,7 @@ TerminalDisplay::TerminalDisplay(QQuickItem *parent)
 ,_flowControlWarningEnabled(false)
 ,_outputSuspendedLabel(nullptr)
 ,_lineSpacing(0)
+,_colorSchemeRef(0)
 ,_colorsInverted(false)
 ,_opacity(static_cast<qreal>(1))
 ,_backgroundMode(None)
@@ -3505,24 +3506,24 @@ QStringList TerminalDisplay::availableColorSchemes()
 void TerminalDisplay::setColorScheme(const QString &name)
 {
     if ( name != _colorScheme ) {
-        const ColorScheme *cs;
+        if (_colorSchemeRef) {
+            disconnect(_colorSchemeRef, 0, this, 0);
+        }
         // avoid legacy (int) solution
         if (!availableColorSchemes().contains(name))
-            cs = ColorSchemeManager::instance()->defaultColorScheme();
+            _colorSchemeRef = ColorSchemeManager::instance()->defaultColorScheme();
         else
-            cs = ColorSchemeManager::instance()->findColorScheme(name);
+            _colorSchemeRef = ColorSchemeManager::instance()->findColorScheme(name);
 
-        if (! cs)
+        if (! _colorSchemeRef)
         {
             qDebug() << "Cannot load color scheme: " << name;
             return;
         }
 
-        ColorEntry table[TABLE_COLORS];
-        cs->getColorTable(table);
-        setColorTable(table);
-
-        setFillColor(cs->backgroundColor());
+        connect(_colorSchemeRef, SIGNAL(colorChanged(int)), this, SLOT(applyColorScheme()));
+        connect(_colorSchemeRef, SIGNAL(opacityChanged()), this, SLOT(applyColorScheme()));
+        applyColorScheme();
         _colorScheme = name;
         emit colorSchemeChanged();
     }
@@ -3531,6 +3532,17 @@ void TerminalDisplay::setColorScheme(const QString &name)
 QString TerminalDisplay::colorScheme() const
 {
     return _colorScheme;
+}
+
+void TerminalDisplay::applyColorScheme()
+{
+    ColorEntry table[TABLE_COLORS];
+    _colorSchemeRef->getColorTable(table);
+    setColorTable(table);
+    QColor backgroundColor = _colorTable[DEFAULT_BACK_COLOR].color;
+    backgroundColor.setAlphaF(_colorSchemeRef->opacity());
+    setBackgroundColor(backgroundColor);
+    setFillColor(backgroundColor);
 }
 
 void TerminalDisplay::simulateKeyPress(int key, int modifiers, bool pressed, quint32 nativeScanCode, const QString &text)
