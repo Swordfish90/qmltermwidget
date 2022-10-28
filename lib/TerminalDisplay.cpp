@@ -3582,6 +3582,13 @@ int TerminalDisplay::getScrollbarValue()
     return _scrollBar->value();
 }
 
+void TerminalDisplay::setScrollbarValue(int value)
+{
+    if (value != _scrollBar->value()) {
+        _scrollBar->setValue(value);
+    }
+}
+
 int TerminalDisplay::getScrollbarMaximum()
 {
     return _scrollBar->maximum();
