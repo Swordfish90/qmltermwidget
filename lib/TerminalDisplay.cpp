@@ -2877,6 +2877,15 @@ void TerminalDisplay::pasteSelection()
   emitSelection(true,false);
 }
 
+bool TerminalDisplay::isClipboardEmpty()
+{
+    return QApplication::clipboard()->text().isEmpty();
+}
+
+bool TerminalDisplay::isSelectionEmpty()
+{
+    return _screenWindow->selectedText(_preserveLineBreaks).isEmpty();
+}
 
 void TerminalDisplay::setConfirmMultilinePaste(bool confirmMultilinePaste) {
     _confirmMultilinePaste = confirmMultilinePaste;
