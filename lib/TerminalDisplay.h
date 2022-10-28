@@ -94,6 +94,8 @@ class KONSOLEPRIVATE_EXPORT TerminalDisplay : public QQuickPaintedItem
    Q_PROPERTY(KSession* session         READ getSession      WRITE setSession     NOTIFY sessionChanged          )
    Q_PROPERTY(QFont font                READ getVTFont       WRITE setVTFont      NOTIFY vtFontChanged           )
    Q_PROPERTY(QString colorScheme       READ colorScheme     WRITE setColorScheme NOTIFY colorSchemeChanged      )
+   Q_PROPERTY(QColor backgroundColor    READ backgroundColor                      NOTIFY backgroundColorChanged  )
+   Q_PROPERTY(QColor foregroundColor    READ foregroundColor                      NOTIFY foregroundColorChanged  )
    Q_PROPERTY(QSize terminalSize        READ getTerminalSize                      NOTIFY changedContentSizeSignal)
    Q_PROPERTY(int lineSpacing           READ lineSpacing     WRITE setLineSpacing NOTIFY lineSpacingChanged      )
    Q_PROPERTY(bool terminalUsesMouse    READ getUsesMouse                         NOTIFY usesMouseChanged        )
@@ -564,6 +566,9 @@ public slots:
      */
     void setForegroundColor(const QColor& color);
 
+    QColor backgroundColor() const;
+    QColor foregroundColor() const;
+    
     void selectionChanged();
 
     // QMLTermWidget
@@ -637,6 +642,8 @@ signals:
     void lineSpacingChanged();
     void availableColorSchemesChanged();
     void colorSchemeChanged();
+    void backgroundColorChanged();
+    void foregroundColorChanged();
     void fullCursorHeightChanged();
     void blinkingCursorStateChanged();
     void boldIntenseChanged();
