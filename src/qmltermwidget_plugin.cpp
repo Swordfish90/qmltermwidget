@@ -15,7 +15,9 @@ static QObject *colorschememanager_provider(QQmlEngine *engine, QJSEngine *scrip
     Q_UNUSED(engine)
     Q_UNUSED(scriptEngine)
 
-    return ColorSchemeManager::instance();
+    QObject* instance = ColorSchemeManager::instance();
+    QQmlEngine::setObjectOwnership(instance, QQmlEngine::CppOwnership);
+    return instance;
 }
 
 void QmltermwidgetPlugin::registerTypes(const char *uri)
