@@ -94,12 +94,14 @@ class KONSOLEPRIVATE_EXPORT TerminalDisplay : public QQuickPaintedItem
    Q_PROPERTY(KSession* session         READ getSession      WRITE setSession     NOTIFY sessionChanged          )
    Q_PROPERTY(QFont font                READ getVTFont       WRITE setVTFont      NOTIFY vtFontChanged           )
    Q_PROPERTY(QString colorScheme       READ colorScheme     WRITE setColorScheme NOTIFY colorSchemeChanged      )
+   Q_PROPERTY(QColor backgroundColor    READ backgroundColor                      NOTIFY backgroundColorChanged  )
+   Q_PROPERTY(QColor foregroundColor    READ foregroundColor                      NOTIFY foregroundColorChanged  )
    Q_PROPERTY(QSize terminalSize        READ getTerminalSize                      NOTIFY changedContentSizeSignal)
    Q_PROPERTY(int lineSpacing           READ lineSpacing     WRITE setLineSpacing NOTIFY lineSpacingChanged      )
    Q_PROPERTY(bool terminalUsesMouse    READ getUsesMouse                         NOTIFY usesMouseChanged        )
    Q_PROPERTY(int lines                 READ lines                                NOTIFY changedContentSizeSignal)
    Q_PROPERTY(int columns               READ columns                              NOTIFY changedContentSizeSignal)
-   Q_PROPERTY(int scrollbarCurrentValue READ getScrollbarValue                    NOTIFY scrollbarParamsChanged  )
+   Q_PROPERTY(int scrollbarCurrentValue READ getScrollbarValue WRITE setScrollbarValue NOTIFY scrollbarParamsChanged  )
    Q_PROPERTY(int scrollbarMaximum      READ getScrollbarMaximum                  NOTIFY scrollbarParamsChanged  )
    Q_PROPERTY(int scrollbarMinimum      READ getScrollbarMinimum                  NOTIFY scrollbarParamsChanged  )
    Q_PROPERTY(QSize fontMetrics         READ getFontMetrics                       NOTIFY changedFontMetricSignal )
@@ -502,7 +504,13 @@ public slots:
      */
     void pasteSelection();
 
-    /**
+    /** Checks if the clipboard is empty */
+    bool isClipboardEmpty();
+
+    /** Checks if the selection is empty */
+    bool isSelectionEmpty();
+
+    /** 
        * Changes whether the flow control warning box should be shown when the flow control
        * stop key (Ctrl+S) are pressed.
        */
@@ -564,6 +572,9 @@ public slots:
      */
     void setForegroundColor(const QColor& color);
 
+    QColor backgroundColor() const;
+    QColor foregroundColor() const;
+    
     void selectionChanged();
 
     // QMLTermWidget
@@ -637,6 +648,8 @@ signals:
     void lineSpacingChanged();
     void availableColorSchemesChanged();
     void colorSchemeChanged();
+    void backgroundColorChanged();
+    void foregroundColorChanged();
     void fullCursorHeightChanged();
     void blinkingCursorStateChanged();
     void boldIntenseChanged();
@@ -704,6 +717,7 @@ protected slots:
     //Renables bell noises and visuals.  Used to disable further bells for a short period of time
     //after emitting the first in a sequence of bell events.
     void enableBell();
+    void applyColorScheme();
 
 private slots:
 
@@ -880,6 +894,7 @@ private:
 
     uint _lineSpacing;
     QString _colorScheme;
+    const ColorScheme* _colorSchemeRef;
     bool _colorsInverted; // true during visual bell
 
     QSize _size;
@@ -949,6 +964,8 @@ private:
     bool getUsesMouse();
 
     int getScrollbarValue();
+    void setScrollbarValue(int value);
+
     int getScrollbarMaximum();
     int getScrollbarMinimum();
 

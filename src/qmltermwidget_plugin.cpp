@@ -1,5 +1,6 @@
 #include "qmltermwidget_plugin.h"
 
+#include "ColorScheme.h"
 #include "TerminalDisplay.h"
 #include "ksession.h"
 
@@ -9,11 +10,23 @@
 
 using namespace Konsole;
 
+static QObject *colorschememanager_provider(QQmlEngine *engine, QJSEngine *scriptEngine)
+{
+    Q_UNUSED(engine)
+    Q_UNUSED(scriptEngine)
+
+    QObject* instance = ColorSchemeManager::instance();
+    QQmlEngine::setObjectOwnership(instance, QQmlEngine::CppOwnership);
+    return instance;
+}
+
 void QmltermwidgetPlugin::registerTypes(const char *uri)
 {
     // @uri org.qterminal.qmlterminal
     qmlRegisterType<TerminalDisplay>(uri, 1, 0, "QMLTermWidget");
     qmlRegisterType<KSession>(uri, 1, 0, "QMLTermSession");
+    qmlRegisterUncreatableType<const Konsole::ColorScheme>(uri, 1, 0, "ColorScheme", QStringLiteral("Not instantiatable"));
+    qmlRegisterSingletonType<ColorSchemeManager>(uri, 1, 0, "ColorSchemeManager", colorschememanager_provider);
 }
 
 void QmltermwidgetPlugin::initializeEngine(QQmlEngine *engine, const char *uri)
