@@ -43,10 +43,6 @@
 
 using namespace Konsole;
 
-//FIXME: this is emulation specific. Use false for xterm, true for ANSI.
-//FIXME: see if we can get this from terminfo.
-#define BS_CLEARS false
-
 //Macro to convert x,y position on screen to position within an image.
 //
 //Originally the image was stored as one large contiguous block of
@@ -125,6 +121,37 @@ void Screen::cursorLeft(int n)
     if (n == 0) n = 1; // Default
     cuX = qMin(columns-1,cuX); // nowrap!
     cuX = qMax(0,cuX-n);
+}
+
+void Screen::cursorNextLine(int n)
+    //=CNL
+{
+    if (n == 0) {
+        n = 1; // Default
+    }
+    cuX = 0;
+    while (n > 0) {
+        if (cuY < lines - 1) {
+            cuY += 1;
+        }
+        n--;
+    }
+
+}
+
+void Screen::cursorPreviousLine(int n)
+    //=CPL
+{
+    if (n == 0) {
+        n = 1; // Default
+    }
+    cuX = 0;
+    while (n > 0) {
+        if (cuY  > 0) {
+            cuY -= 1;
+        }
+        n--;
+    }
 }
 
 void Screen::cursorRight(int n)
@@ -391,7 +418,7 @@ void Screen::setDefaultMargins()
    is to poor to distinguish between bold
    (which is a font attribute) and intensive
    (which is a color attribute), we translate
-   this and RE_BOLD in falls eventually appart
+   this and RE_BOLD in falls eventually apart
    into RE_BOLD and RE_INTENSIVE.
    */
 
@@ -482,7 +509,7 @@ void Screen::getImage( Character* dest, int size, int startLine, int endLine ) c
     const int mergedLines = endLine - startLine + 1;
 
     Q_ASSERT( size >= mergedLines * columns );
-    Q_UNUSED( size );
+    Q_UNUSED( size )
 
     const int linesInHistoryBuffer = qBound(0,history->getLines()-startLine,mergedLines);
     const int linesInScreenBuffer = mergedLines - linesInHistoryBuffer;
@@ -547,7 +574,7 @@ QVector<LineProperty> Screen::getLineProperties( int startLine , int endLine ) c
 void Screen::reset(bool clearScreen)
 {
     setMode(MODE_Wrap  ); saveMode(MODE_Wrap  );  // wrap at end of margin
-    resetMode(MODE_Origin); saveMode(MODE_Origin);  // position refere to [1,1]
+    resetMode(MODE_Origin); saveMode(MODE_Origin);  // position refers to [1,1]
     resetMode(MODE_Insert); saveMode(MODE_Insert);  // overstroke
     setMode(MODE_Cursor);                         // cursor visible
     resetMode(MODE_Screen);                         // screen not inverse
@@ -576,9 +603,6 @@ void Screen::backspace()
 
     if (screenLines[cuY].size() < cuX+1)
         screenLines[cuY].resize(cuX+1);
-
-    if (BS_CLEARS)
-        screenLines[cuY][cuX].character = ' ';
 }
 
 void Screen::tab(int n)
@@ -644,6 +668,11 @@ void Screen::checkSelection(int from, int to)
         clearSelection();
 }
 
+static inline bool isRegionalIndicator(wchar_t c)
+{
+    return (c >= 0x1F1E6 && c <= 0x1F1FF); // for creating flag codes
+}
+
 void Screen::displayCharacter(wchar_t c)
 {
     // Note that VT100 does wrapping BEFORE putting the character.
@@ -652,16 +681,135 @@ void Screen::displayCharacter(wchar_t c)
     // putting the cursor one right to the last column of the screen.
 
     int w = konsole_wcwidth(c);
-    if (w <= 0)
-        return;
+    if (w < 0)
+        return; // Non-printable character
+    if (w == 0
+        // Also, make an extended character with a pair of flag codes
+        || (w == 1 && isRegionalIndicator(c)))
+    {
+        if (w == 0 && QChar(c).category() != QChar::Mark_NonSpacing)
+            return;
+        // Find previous "real character" to try to combine with
+        int charToCombineWithX = qMin(cuX, screenLines[cuY].length());
+        int charToCombineWithY = cuY;
+        bool previousChar = true;
+        do {
+            if (charToCombineWithX > 0)
+            {
+                --charToCombineWithX;
+            }
+            else if (charToCombineWithY > 0 && lineProperties.at(charToCombineWithY - 1) & LINE_WRAPPED)
+            { // Try previous line
+                --charToCombineWithY;
+                charToCombineWithX = screenLines[charToCombineWithY].length() - 1;
+            }
+            else
+            {
+                // Give up
+                previousChar = false;
+                break;
+            }
 
-    if (cuX+w > columns) {
-        if (getMode(MODE_Wrap)) {
+            // Failsafe
+            if (charToCombineWithX < 0)
+            {
+                previousChar = false;
+                break;
+            }
+        } while (w == 0 && screenLines[charToCombineWithY][charToCombineWithX] == 0);
+
+        if (!previousChar)
+        {
+            if (w == 0)
+            {
+                w = 2;
+            }
+            goto notcombine;
+        }
+
+        Character& currentChar = screenLines[charToCombineWithY][charToCombineWithX];
+
+        if (w > 0 && !isRegionalIndicator(currentChar.character))
+        {
+            goto notcombine; // a single regional indicator (useless)
+        }
+
+        if ((currentChar.rendition & RE_EXTENDED_CHAR) == 0)
+        {
+            uint chars[2] = { static_cast<uint>(currentChar.character), static_cast<uint>(c) };
+            currentChar.rendition |= RE_EXTENDED_CHAR;
+            currentChar.character = ExtendedCharTable::instance.createExtendedChar(chars, 2);
+
+            // when there is a pair of flag codes
+            if (w > 0)
+            {
+                if (cuX + 1 > columns)
+                {
+                    if (getMode(MODE_Wrap))
+                    {
+                        lineProperties[cuY] = (LineProperty)(lineProperties[cuY] | LINE_WRAPPED);
+                        nextLine();
+                    }
+                    else
+                    {
+                        cuX = columns - 1;
+                    }
+                }
+
+                if (screenLines[cuY].size() < cuX + 1)
+                {
+                    screenLines[cuY].resize(cuX + 1);
+                }
+
+                // NOTE: This is needed for correct selection.
+                Character& ch = screenLines[cuY][cuX];
+                ch.character = 0;
+                ch.foregroundColor = effectiveForeground;
+                ch.backgroundColor = effectiveBackground;
+                ch.rendition = effectiveRendition;
+
+                if (getMode(MODE_Insert))
+                {
+                    insertChars(1);
+                }
+
+                lastPos = loc(cuX,cuY);
+                checkSelection(lastPos, lastPos);
+                lastDrawnChar = currentChar.character;
+
+                cuX++;
+            }
+        }
+        else
+        {
+            ushort extendedCharLength;
+            const uint* oldChars = ExtendedCharTable::instance.lookupExtendedChar(currentChar.character, extendedCharLength);
+            Q_ASSERT(oldChars);
+            if (oldChars && extendedCharLength < 8)
+            {
+                Q_ASSERT(extendedCharLength > 1);
+                Q_ASSERT(extendedCharLength < 65535); // redundant due to above check
+                auto chars = std::make_unique<uint[]>(extendedCharLength + 1);
+                std::copy_n(oldChars, extendedCharLength, chars.get());
+                chars[extendedCharLength] = c;
+                currentChar.character = ExtendedCharTable::instance.createExtendedChar(chars.get(), extendedCharLength + 1);
+            }
+        }
+        return;
+    }
+
+notcombine:
+    if (cuX + w > columns)
+    {
+        if (getMode(MODE_Wrap))
+        {
             lineProperties[cuY] = (LineProperty)(lineProperties[cuY] | LINE_WRAPPED);
             nextLine();
         }
         else
+        {
             cuX = columns-w;
+        }
     }
 
     // ensure current line vector has enough elements

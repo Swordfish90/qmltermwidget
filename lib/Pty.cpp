@@ -135,11 +135,10 @@ char Pty::erase() const
 
 void Pty::addEnvironmentVariables(const QStringList& environment)
 {
-    QListIterator<QString> iter(environment);
-    while (iter.hasNext())
-    {
-        QString pair = iter.next();
 
+    bool termEnvVarAdded = false;
+    for (const QString &pair : environment)
+    {
         // split on the first '=' character
         int pos = pair.indexOf(QLatin1Char('='));
 
@@ -149,8 +148,17 @@ void Pty::addEnvironmentVariables(const QStringList& environment)
             QString value = pair.mid(pos+1);
 
             setEnv(variable,value);
+
+            if (variable == QLatin1String("TERM")) {
+                termEnvVarAdded = true;
         }
     }
+
+    // fallback to ensure that $TERM is always set
+    if (!termEnvVarAdded) {
+        setEnv(QStringLiteral("TERM"), QStringLiteral("xterm-256color"));
+    }
+}
 }
 
 int Pty::start(const QString& program,
@@ -263,6 +271,26 @@ Pty::Pty(QObject* parent)
 }
 void Pty::init()
 {
+    // Must call parent class child process modifier, as it sets file descriptors ...etc
+    auto parentChildProcModifier = KPtyProcess::childProcessModifier();
+    setChildProcessModifier([parentChildProcModifier = std::move(parentChildProcModifier)]() {
+        if (parentChildProcModifier) {
+            parentChildProcModifier();
+        }
+
+        // reset all signal handlers
+        // this ensures that terminal applications respond to
+        // signals generated via key sequences such as Ctrl+C
+        // (which sends SIGINT)
+        struct sigaction action;
+        sigemptyset(&action.sa_mask);
+        action.sa_handler = SIG_DFL;
+        action.sa_flags = 0;
+        for (int signal = 1; signal < NSIG; signal++) {
+            sigaction(signal, &action, nullptr);
+        }
+    });
+
   _windowColumns = 0;
   _windowLines = 0;
   _eraseChar = 0;
@@ -291,13 +319,17 @@ void Pty::sendData(const char* data, int length)
 
 void Pty::dataReceived()
 {
-     QByteArray data = pty()->readAll();
-    emit receivedData(data.constData(),data.count());
+    QByteArray data = pty()->readAll();
+    if (data.isEmpty())
+    {
+        return;
+    }
+    emit receivedData(data.constData(),data.size());
 }
 
 void Pty::lockPty(bool lock)
 {
-    Q_UNUSED(lock);
+    Q_UNUSED(lock)
 
 // TODO: Support for locking the Pty
   //if (lock)
@@ -308,33 +340,22 @@ void Pty::lockPty(bool lock)
 
 int Pty::foregroundProcessGroup() const
 {
-    int pid = tcgetpgrp(pty()->masterFd());
-
-    if ( pid != -1 )
+    const int master_fd = pty()->masterFd();
+    if (master_fd >= 0)
     {
-        return pid;
+        int pid = tcgetpgrp(master_fd);
+
+        if (pid != -1)
+        {
+            return pid;
+        }
     }
 
     return 0;
 }
 
-void Pty::setupChildProcess()
+void Pty::closePty()
 {
-    KPtyProcess::setupChildProcess();
-
-    // reset all signal handlers
-    // this ensures that terminal applications respond to
-    // signals generated via key sequences such as Ctrl+C
-    // (which sends SIGINT)
-    struct sigaction action;
-    sigset_t sigset;
-    sigemptyset(&action.sa_mask);
-    sigemptyset(&sigset);
-    action.sa_handler = SIG_DFL;
-    action.sa_flags = 0;
-    for (int signal=1;signal < NSIG; signal++) {
-        sigaction(signal,&action,nullptr);
-        sigaddset(&sigset, signal);
-    }
-    sigprocmask(SIG_UNBLOCK, &sigset, nullptr);
+    pty()->close();
 }
+

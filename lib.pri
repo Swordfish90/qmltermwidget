@@ -29,6 +29,7 @@ HEADERS += $$PWD/lib/BlockArray.h \
     $$PWD/lib/tools.h \
     $$PWD/lib/Vt102Emulation.h \
     $$PWD/lib/mac-vkcode.h \
+    $$PWD/lib/ksession.h \
     #$$PWD/lib/qtermwidget.h
 
 SOURCES += $$PWD/lib/BlockArray.cpp \
@@ -54,6 +55,7 @@ SOURCES += $$PWD/lib/BlockArray.cpp \
     $$PWD/lib/TerminalCharacterDecoder.cpp \
     $$PWD/lib/TerminalDisplay.cpp \
     $$PWD/lib/tools.cpp \
-    $$PWD/lib/Vt102Emulation.cpp
+    $$PWD/lib/Vt102Emulation.cpp \
+    $$PWD/lib/ksession.cpp
 
 #FORMS = $$PWD/lib/SearchBar.ui

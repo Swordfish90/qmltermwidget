@@ -25,21 +25,6 @@
 #include "mac-vkcode.h"
 #include "tools.h"
 
-
-// XKB
-//#include <config-konsole.h>
-
-// this allows konsole to be compiled without XKB and XTEST extensions
-// even though it might be available on a particular system.
-#if defined(AVOID_XKB)
-    #undef HAVE_XKB
-#endif
-
-#if defined(HAVE_XKB)
-    void scrolllock_set_off();
-    void scrolllock_set_on();
-#endif
-
 // Standard
 #include <cstdio>
 #include <unistd.h>
@@ -47,12 +32,7 @@
 // Qt
 #include <QEvent>
 #include <QKeyEvent>
-#include <QByteRef>
 #include <QDebug>
-
-// KDE
-//#include <kdebug.h>
-//#include <klocale.h>
 
 // Konsole
 #include "KeyboardTranslator.h"
@@ -65,10 +45,12 @@ Vt102Emulation::Vt102Emulation()
     : Emulation(),
      prevCC(0),
      _titleUpdateTimer(new QTimer(this)),
-     _reportFocusEvents(false)
+     _reportFocusEvents(false),
+     _toUtf8(QStringEncoder::Utf8)
 {
   _titleUpdateTimer->setSingleShot(true);
-  QObject::connect(_titleUpdateTimer , SIGNAL(timeout()) , this , SLOT(updateTitle()));
+  QObject::connect(_titleUpdateTimer, &QTimer::timeout,
+          this, &Konsole::Vt102Emulation::updateTitle);
 
   initTokenizer();
   reset();
@@ -91,7 +73,6 @@ void Vt102Emulation::reset()
   _screen[0]->reset();
   resetCharset(1);
   _screen[1]->reset();
-  setCodec(LocaleCodec);
 
   bufferedUpdate();
 }
@@ -151,12 +132,12 @@ void Vt102Emulation::reset()
    The last two forms allow list of arguments. Since the elements of
    the lists are treated individually the same way, they are passed
    as individual tokens to the interpretation. Further, because the
-   meaning of the parameters are names (althought represented as numbers),
+   meaning of the parameters are names (although represented as numbers),
    they are includes within the token ('N').
 
 */
 
-#define TY_CONSTRUCT(T,A,N) ( ((((int)N) & 0xffff) << 16) | ((((int)A) & 0xff) << 8) | (((int)T) & 0xff) )
+#define TY_CONSTRUCT(T,A,N) ( (((static_cast<int>(N)) & 0xffff) << 16) | (((static_cast<int>(A)) & 0xff) << 8) | ((static_cast<int>(T)) & 0xff) )
 
 #define TY_CHR(   )     TY_CONSTRUCT(0,0,0)
 #define TY_CTL(A  )     TY_CONSTRUCT(1,A,0)
@@ -230,7 +211,7 @@ void Vt102Emulation::initTokenizer()
     charClass[i] |= CTL;
   for(i = 32;i < 256; ++i)
     charClass[i] |= CHR;
-  for(s = (quint8*)"@ABCDGHILMPSTXZbcdfry"; *s; ++s)
+  for(s = (quint8*)"@ABCDEFGHILMPSTXZbcdfry"; *s; ++s)
     charClass[*s] |= CPN;
   // resize = \e[8;<row>;<col>t
   for(s = (quint8*)"t"; *s; ++s)
@@ -533,8 +514,8 @@ void Vt102Emulation::processToken(int token, wchar_t p, int q)
     case TY_ESC_CS('+', 'A') :      setCharset           (3,    'A'); break; //VT100
     case TY_ESC_CS('+', 'B') :      setCharset           (3,    'B'); break; //VT100
 
-    case TY_ESC_CS('%', 'G') :      setCodec             (Utf8Codec   ); break; //LINUX
-    case TY_ESC_CS('%', '@') :      setCodec             (LocaleCodec ); break; //LINUX
+    case TY_ESC_CS('%', 'G') :      /*No longer updating codec*/      break; //LINUX
+    case TY_ESC_CS('%', '@') :      /*No longer updating codec*/      break; //LINUX
 
     case TY_ESC_DE('3'      ) : /* Double height line, top half    */
                                 _currentScreen->setLineProperty( LINE_DOUBLEWIDTH , true );
@@ -670,8 +651,8 @@ void Vt102Emulation::processToken(int token, wchar_t p, int q)
     case TY_CSI_PN('B'      ) : _currentScreen->cursorDown           (p         ); break; //VT100
     case TY_CSI_PN('C'      ) : _currentScreen->cursorRight          (p         ); break; //VT100
     case TY_CSI_PN('D'      ) : _currentScreen->cursorLeft           (p         ); break; //VT100
-    case TY_CSI_PN('E'      ) : /* Not implemented: cursor next p lines */         break; //VT100
-    case TY_CSI_PN('F'      ) : /* Not implemented: cursor preceding p lines */    break; //VT100
+    case TY_CSI_PN('E'      ) : _currentScreen->cursorNextLine       (p         ); break; //VT100
+    case TY_CSI_PN('F'      ) : _currentScreen->cursorPreviousLine   (p         ); break; //VT100
     case TY_CSI_PN('G'      ) : _currentScreen->setCursorX           (p         ); break; //LINUX
     case TY_CSI_PN('H'      ) : _currentScreen->setCursorYX          (p,      q); break; //VT100
     case TY_CSI_PN('I'      ) : _currentScreen->tab                  (p         ); break;
@@ -763,7 +744,7 @@ void Vt102Emulation::processToken(int token, wchar_t p, int q)
     //Note about mouse modes:
     //There are four mouse modes which xterm-compatible terminals can support - 1000,1001,1002,1003
     //Konsole currently supports mode 1000 (basic mouse press and release) and mode 1002 (dragging the mouse).
-    //TODO:  Implementation of mouse modes 1001 (something called hilight tracking) and
+    //TODO:  Implementation of mouse modes 1001 (something called highlight tracking) and
     //1003 (a slight variation on dragging the mouse)
     //
 
@@ -900,7 +881,7 @@ void Vt102Emulation::reportTerminalType()
 
 void Vt102Emulation::reportSecondaryAttributes()
 {
-  // Seconday device attribute response (Request was: ^[[>0c or ^[[>c)
+  // Secondary device attribute response (Request was: ^[[>0c or ^[[>c)
   if (getMode(MODE_Ansi))
     sendString("\033[>0;115;0c"); // Why 115?  ;)
   else
@@ -962,7 +943,7 @@ void Vt102Emulation::sendMouseEvent( int cb, int cx, int cy , int eventType )
     if ((getMode(MODE_Mouse1002) || getMode(MODE_Mouse1003)) && eventType == 1)
       cb += 0x20; //add 32 to signify motion event
 
-    char command[32];
+    char command[40];
     command[0] = '\0';
     // Check the extensions in decreasing order of preference. Encoding the release event above assumes that 1006 comes first.
     if (getMode(MODE_Mouse1006)) {
@@ -975,8 +956,8 @@ void Vt102Emulation::sendMouseEvent( int cb, int cx, int cy , int eventType )
             // coordinate+32, no matter what the locale is. We could easily
             // convert manually, but QString can also do it for us.
             QChar coords[2];
-            coords[0] = cx + 0x20;
-            coords[1] = cy + 0x20;
+            coords[0] = QChar(cx + 0x20);
+            coords[1] = QChar(cy + 0x20);
             QString coordsStr = QString(coords, 2);
             QByteArray utf8 = coordsStr.toUtf8();
             snprintf(command, sizeof(command), "\033[M%c%s", cb + 0x20, utf8.constData());
@@ -1025,8 +1006,6 @@ void Vt102Emulation::sendText( const QString& text )
     sendKeyEvent(&event, false); // expose as a big fat keypress event
   }
 }
-//<<<<<<< HEAD
-
 QKeyEvent * Vt102Emulation::remapKeyModifiersForMac(QKeyEvent *event) {
   Qt::KeyboardModifiers modifiers = event->modifiers();
 
@@ -1128,7 +1107,9 @@ void Vt102Emulation::sendKeyEvent(QKeyEvent* origEvent, bool fromPaste)
         }
         else if ( !entry.text().isEmpty() )
         {
-            textToSend += entry.text(true,modifiers);
+            QString str = QString::fromUtf8(entry.text(true,modifiers));
+            QByteArray bytes = _toUtf8(str);
+            textToSend += bytes;
         }
         else if((modifiers & KeyboardTranslator::CTRL_MOD) && event->key() >= 0x40 && event->key() < 0x5f) {
             textToSend += (event->key() & 0x1f);
@@ -1143,7 +1124,8 @@ void Vt102Emulation::sendKeyEvent(QKeyEvent* origEvent, bool fromPaste)
             textToSend += "\033[6~";
         }
         else {
-            textToSend += _codec->fromUnicode(event->text());
+	    QByteArray bytes = _toUtf8(event->text());
+	    textToSend += bytes;
         }
 
         if (!fromPaste && textToSend.length()) {
@@ -1160,7 +1142,7 @@ void Vt102Emulation::sendKeyEvent(QKeyEvent* origEvent, bool fromPaste)
                                          "into characters to send to the terminal "
                                          "is missing.");
         reset();
-        receiveData( translatorError.toUtf8().constData() , translatorError.count() );
+        receiveData( translatorError.toUtf8().constData() , translatorError.size() );
     }
 }
 
@@ -1397,7 +1379,7 @@ char Vt102Emulation::eraseChar() const
                                             Qt::Key_Backspace,
                                             Qt::NoModifier,
                                             KeyboardTranslator::NoState);
-  if ( entry.text().count() > 0 )
+  if ( entry.text().size() > 0 )
       return entry.text().at(0);
   else
       return '\b';
@@ -1411,4 +1393,3 @@ void Vt102Emulation::reportDecodingError()
 }
 
 //#include "Vt102Emulation.moc"
-

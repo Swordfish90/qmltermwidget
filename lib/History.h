@@ -53,7 +53,7 @@ public:
 
   virtual void add(const unsigned char* bytes, int len);
   virtual void get(unsigned char* bytes, int len, int loc);
-  virtual int  len();
+  virtual int  len() const;
 
   //mmaps the file in read-only mode
   void map();
@@ -71,11 +71,11 @@ private:
   //pointer to start of mmap'ed file data, or 0 if the file is not mmap'ed
   char* fileMap;
 
-  //incremented whenver 'add' is called and decremented whenever
+  //incremented whenever 'add' is called and decremented whenever
   //'get' is called.
   //this is used to detect when a large number of lines are being read and processed from the history
   //and automatically mmap the file for better performance (saves the overhead of many lseek-read calls).
-  int readWriteBalance;
+  int readWriteBalance = 0;
 
   //when readWriteBalance goes below this threshold, the file will be mmap'ed automatically
   static const int MAP_THRESHOLD = -1000;
@@ -95,16 +95,16 @@ public:
   HistoryScroll(HistoryType*);
  virtual ~HistoryScroll();
 
-  virtual bool hasScroll();
+  virtual bool hasScroll() const;
 
   // access to history
-  virtual int  getLines() = 0;
-  virtual int  getLineLen(int lineno) = 0;
-  virtual void getCells(int lineno, int colno, int count, Character res[]) = 0;
-  virtual bool isWrappedLine(int lineno) = 0;
+  virtual int  getLines() const = 0;
+  virtual int  getLineLen(int lineno) const = 0;
+  virtual void getCells(int lineno, int colno, int count, Character res[]) const = 0;
+  virtual bool isWrappedLine(int lineno) const = 0;
 
   // backward compatibility (obsolete)
-  Character   getCell(int lineno, int colno) { Character res; getCells(lineno,colno,1,&res); return res; }
+  Character   getCell(int lineno, int colno) const { Character res; getCells(lineno,colno,1,&res); return res; }
 
   // adding lines.
   virtual void addCells(const Character a[], int count) = 0;
@@ -122,7 +122,7 @@ public:
   // is very unsafe, because those references will no longer
   // be valid if the history scroll is deleted.
   //
-  const HistoryType& getType() { return *m_histType; }
+  const HistoryType& getType() const { return *m_histType; }
 
 protected:
   HistoryType* m_histType;
@@ -141,21 +141,21 @@ public:
   HistoryScrollFile(const QString &logFileName);
   ~HistoryScrollFile() override;
 
-  int  getLines() override;
-  int  getLineLen(int lineno) override;
-  void getCells(int lineno, int colno, int count, Character res[]) override;
-  bool isWrappedLine(int lineno) override;
+  int  getLines() const override;
+  int  getLineLen(int lineno) const override;
+  void getCells(int lineno, int colno, int count, Character res[]) const override;
+  bool isWrappedLine(int lineno) const override;
 
   void addCells(const Character a[], int count) override;
   void addLine(bool previousWrapped=false) override;
 
 private:
-  int startOfLine(int lineno);
+  int startOfLine(int lineno) const;
 
   QString m_logFileName;
-  HistoryFile index; // lines Row(int)
-  HistoryFile cells; // text  Row(Character)
-  HistoryFile lineflags; // flags Row(unsigned char)
+  mutable HistoryFile index; // lines Row(int)
+  mutable HistoryFile cells; // text  Row(Character)
+  mutable HistoryFile lineflags; // flags Row(unsigned char)
 };
 
 
@@ -170,10 +170,10 @@ public:
   HistoryScrollBuffer(unsigned int maxNbLines = 1000);
   ~HistoryScrollBuffer() override;
 
-  int  getLines() override;
-  int  getLineLen(int lineno) override;
-  void getCells(int lineno, int colno, int count, Character res[]) override;
-  bool isWrappedLine(int lineno) override;
+  int  getLines() const override;
+  int  getLineLen(int lineno) const override;
+  void getCells(int lineno, int colno, int count, Character res[]) const override;
+  bool isWrappedLine(int lineno) const override;
 
   void addCells(const Character a[], int count) override;
   void addCellsVector(const QVector<Character>& cells) override;
@@ -225,12 +225,12 @@ public:
   HistoryScrollNone();
   ~HistoryScrollNone() override;
 
-  bool hasScroll() override;
+  bool hasScroll() const override;
 
-  int  getLines() override;
-  int  getLineLen(int lineno) override;
-  void getCells(int lineno, int colno, int count, Character res[]) override;
-  bool isWrappedLine(int lineno) override;
+  int  getLines() const override;
+  int  getLineLen(int lineno) const override;
+  void getCells(int lineno, int colno, int count, Character res[]) const override;
+  bool isWrappedLine(int lineno) const override;
 
   void addCells(const Character a[], int count) override;
   void addLine(bool previousWrapped=false) override;
@@ -245,16 +245,16 @@ public:
   HistoryScrollBlockArray(size_t size);
   ~HistoryScrollBlockArray() override;
 
-  int  getLines() override;
-  int  getLineLen(int lineno) override;
-  void getCells(int lineno, int colno, int count, Character res[]) override;
-  bool isWrappedLine(int lineno) override;
+  int  getLines() const override;
+  int  getLineLen(int lineno) const override;
+  void getCells(int lineno, int colno, int count, Character res[]) const override;
+  bool isWrappedLine(int lineno) const override;
 
   void addCells(const Character a[], int count) override;
   void addLine(bool previousWrapped=false) override;
 
 protected:
-  BlockArray m_blockArray;
+  mutable BlockArray m_blockArray;
   QHash<int,size_t> m_lineLengths;
 };
 
@@ -365,10 +365,10 @@ public:
   CompactHistoryScroll(unsigned int maxNbLines = 1000);
   ~CompactHistoryScroll() override;
 
-  int  getLines() override;
-  int  getLineLen(int lineno) override;
-  void getCells(int lineno, int colno, int count, Character res[]) override;
-  bool isWrappedLine(int lineno) override;
+  int  getLines() const override;
+  int  getLineLen(int lineno) const override;
+  void getCells(int lineno, int colno, int count, Character res[]) const override;
+  bool isWrappedLine(int lineno) const override;
 
   void addCells(const Character a[], int count) override;
   void addCellsVector(const TextLine& cells) override;

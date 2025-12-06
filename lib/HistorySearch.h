@@ -22,6 +22,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QMap>
+#include <QRegularExpression>
 
 #include <Session.h>
 #include <ScreenWindow.h>
@@ -38,7 +39,7 @@ class HistorySearch : public QObject
     Q_OBJECT
 
 public:
-    explicit HistorySearch(EmulationPtr emulation, const QRegExp& regExp, bool forwards,
+    explicit HistorySearch(EmulationPtr emulation, const QRegularExpression& regExp, bool forwards,
                            int startColumn, int startLine, QObject* parent);
 
     ~HistorySearch() override;
@@ -55,15 +56,15 @@ private:
 
 
     EmulationPtr m_emulation;
-    QRegExp m_regExp;
-    bool m_forwards;
-    int m_startColumn;
-    int m_startLine;
+    QRegularExpression m_regExp;
+    bool m_forwards = false;
+    int m_startColumn = 0;
+    int m_startLine = 0;
 
-    int m_foundStartColumn;
-    int m_foundStartLine;
-    int m_foundEndColumn;
-    int m_foundEndLine;
+    int m_foundStartColumn = 0;
+    int m_foundStartLine = 0;
+    int m_foundEndColumn = 0;
+    int m_foundEndLine = 0;
 };
 
 #endif	/* TASK_H */

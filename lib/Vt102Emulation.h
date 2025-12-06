@@ -30,6 +30,7 @@
 #include <QKeyEvent>
 #include <QHash>
 #include <QTimer>
+#include <QStringEncoder>
 
 // Konsole
 #include "Emulation.h"
@@ -39,7 +40,7 @@
 #define MODE_AppCuKeys       (MODES_SCREEN+1)   // Application cursor keys (DECCKM)
 #define MODE_AppKeyPad       (MODES_SCREEN+2)   //
 #define MODE_Mouse1000       (MODES_SCREEN+3)   // Send mouse X,Y position on press and release
-#define MODE_Mouse1001       (MODES_SCREEN+4)   // Use Hilight mouse tracking
+#define MODE_Mouse1001       (MODES_SCREEN+4)   // Use Highlight mouse tracking
 #define MODE_Mouse1002       (MODES_SCREEN+5)   // Use cell motion mouse tracking
 #define MODE_Mouse1003       (MODES_SCREEN+6)   // Use all motion mouse tracking
 #define MODE_Mouse1005       (MODES_SCREEN+7)   // Xterm-style extended coordinates
@@ -195,7 +196,9 @@ private:
   QHash<int,QString> _pendingTitleUpdates;
   QTimer* _titleUpdateTimer;
 
-    bool _reportFocusEvents;
+  bool _reportFocusEvents;
+
+  QStringEncoder _toUtf8;
 };
 
 }

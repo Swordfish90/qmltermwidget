@@ -30,13 +30,12 @@
 
 // Qt
 #include <QApplication>
-#include <QByteRef>
 #include <QDir>
 #include <QFile>
-#include <QRegExp>
 #include <QStringList>
 #include <QFile>
 #include <QtDebug>
+#include <QRegularExpression>
 
 #include "Pty.h"
 //#include "kptyprocess.h"
@@ -48,6 +47,7 @@
 #include <QQuickWindow>
 
 using namespace Konsole;
+using namespace Qt::Literals::StringLiterals;
 
 int Session::lastSessionId = 0;
 
@@ -108,7 +108,7 @@ Session::Session(QObject* parent) :
             this, &Session::cursorChanged);
 
     //connect teletype to emulation backend
-    _shellProcess->setUtf8Mode(_emulation->utf8());
+    _shellProcess->setUtf8Mode(true);
 
     connect( _shellProcess,SIGNAL(receivedData(const char *,int)),this,
              SLOT(onReceiveBlock(const char *,int)) );
@@ -117,7 +117,7 @@ Session::Session(QObject* parent) :
     connect( _emulation,SIGNAL(lockPtyRequest(bool)),_shellProcess,SLOT(lockPty(bool)) );
     connect( _emulation,SIGNAL(useUtf8Request(bool)),_shellProcess,SLOT(setUtf8Mode(bool)) );
 
-    connect( _shellProcess,SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(done(int)) );
+    connect( _shellProcess,SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(done(int,QProcess::ExitStatus)) );
     // not in kprocess anymore connect( _shellProcess,SIGNAL(done(int)), this, SLOT(done(int)) );
 
     //setup timer for monitoring session activity
@@ -145,12 +145,7 @@ bool Session::hasDarkBackground() const
 }
 bool Session::isRunning() const
 {
-    return _shellProcess->state() == QProcess::Running;
-}
-
-void Session::setCodec(QTextCodec * codec) const
-{
-    emulation()->setCodec(codec);
+    return (_shellProcess != nullptr && _shellProcess->state() == QProcess::Running);
 }
 
 void Session::setProgram(const QString & program)
@@ -251,11 +246,11 @@ void Session::run()
     // Upon a KPty error, there is no description on what that error was...
     // Check to see if the given program is executable.
 
-    /* ok iam not exactly sure where _program comes from - however it was set to /bin/bash on my system
-     * Thats bad for BSD as its /usr/local/bin/bash there - its also bad for arch as its /usr/bin/bash there too!
+    /* ok I'm not exactly sure where _program comes from - however it was set to /bin/bash on my system
+     * That's bad for BSD as its /usr/local/bin/bash there - its also bad for arch as its /usr/bin/bash there too!
      * So i added a check to see if /bin/bash exists - if no then we use $SHELL - if that does not exist either, we fall back to /bin/sh
      * As far as i know /bin/sh exists on every unix system.. You could also just put some ifdef __FREEBSD__ here but i think these 2 filechecks are worth
-     * their computing time on any system - especially with the problem on arch linux beeing there too.
+     * their computing time on any system - especially with the problem on arch linux being there too.
      */
     QString exec = QString::fromLocal8Bit(QFile::encodeName(_program));
     // if 'exec' is not specified, fall back to default shell.  if that
@@ -328,7 +323,7 @@ void Session::runEmptyPTY()
     _shellProcess->setErase(_emulation->eraseChar());
     _shellProcess->setWriteable(false);
 
-    // disconnet send data from emulator to internal terminal process
+    // disconnect send data from emulator to internal terminal process
     disconnect( _emulation,SIGNAL(sendData(const char *,int)),
                 _shellProcess, SLOT(sendData(const char *,int)) );
 
@@ -386,7 +381,8 @@ void Session::setUserTitle( int what, const QString & caption )
 
     if (what == 31) {
         QString cwd=caption;
-        cwd=cwd.replace( QRegExp(QLatin1String("^~")), QDir::homePath() );
+        static const QRegularExpression homeRegExp{"^~"_L1};
+        cwd = cwd.replace(homeRegExp, QDir::homePath());
         emit openUrlRequest(cwd);
     }
 
@@ -544,23 +540,52 @@ void Session::refresh()
 
 bool Session::sendSignal(int signal)
 {
-    int result = ::kill(static_cast<pid_t>(_shellProcess->processId()),signal);
+    if (processId() <= 0)
+    {
+        return false;
+    }
+
+    int result = ::kill(static_cast<pid_t>(_shellProcess->processId()), signal);
 
      if ( result == 0 )
      {
-         _shellProcess->waitForFinished();
-         return true;
+         return _shellProcess->waitForFinished(1000);
      }
      else
+     {
          return false;
+     }
 }
 
 void Session::close()
 {
     _autoClose = true;
     _wantedClose = true;
-    if (!_shellProcess->isRunning() || !sendSignal(SIGHUP)) {
-        // Forced close.
+
+    if (isRunning())
+    {
+        // Try SIGHUP, and if unsuccessful, do a hard kill.
+        // This is the sequence used by most other terminal emulators like xterm, gnome-terminal, ...
+        if (sendSignal(SIGHUP))
+        {
+            return;
+        }
+
+        qWarning() << "Process " << processId() << " did not die with SIGHUP";
+        _shellProcess->closePty();
+        if (!_shellProcess->waitForFinished(1000))
+        {
+            if (!sendSignal(SIGKILL))
+            {
+                qWarning() << "Process " << processId() << " did not die with SIGKILL";
+                // Forced close.
+                QTimer::singleShot(1, this, SIGNAL(finished()));
+            }
+        }
+    }
+    else
+    {
+        // terminal process has finished, just close the session
         QTimer::singleShot(1, this, SIGNAL(finished()));
     }
 }
@@ -577,6 +602,7 @@ void Session::sendKeyEvent(QKeyEvent* e) const
 
 Session::~Session()
 {
+    close();
     delete _emulation;
     delete _shellProcess;
 //  delete _zmodemProc;
@@ -592,7 +618,7 @@ QString Session::profileKey() const
     return _profileKey;
 }
 
-void Session::done(int exitStatus)
+void Session::done(int exitCode, QProcess::ExitStatus exitStatus)
 {
     if (!_autoClose) {
         _userTitle = QString::fromLatin1("This session is done. Finished");
@@ -605,16 +631,16 @@ void Session::done(int exitStatus)
     // So, we make it translatable, hoping that in the future it will
     // be used in some kind of notification.
     QString message;
-    if (!_wantedClose || exitStatus != 0) {
+    if (!_wantedClose || exitCode != 0) {
 
         if (_shellProcess->exitStatus() == QProcess::NormalExit) {
-            message = tr("Session '%1' exited with status %2.").arg(_nameTitle).arg(exitStatus);
+            message = tr("Session '%1' exited with code %2.").arg(_nameTitle).arg(exitCode);
         } else {
             message = tr("Session '%1' crashed.").arg(_nameTitle);
         }
     }
 
-    if ( !_wantedClose && _shellProcess->exitStatus() != QProcess::NormalExit )
+    if ( !_wantedClose && exitStatus != QProcess::NormalExit )
         message = tr("Session '%1' exited unexpectedly.").arg(_nameTitle);
     else
         emit finished();

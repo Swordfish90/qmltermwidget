@@ -1,16 +1,13 @@
 # QMLTermWidget
 
-## Description
-This project is a QML port of qtermwidget. It is written to be as close as possible to the upstream project in order to make cooperation possible.
+This project is a QML port of qtermwidget. I'm trying to keep it close to the upstream project. The main branch as been migrated to Qt6, please check the qt5 branch for the latest qt5 version.
 
-At the moment this plugin is powering cool-retro-term and the ubuntu-terminal-app.
+At the moment this plugin is powering cool-retro-term and some other QML terminal emulators.
 
-This package also contains a simple test application.
+## Building
 
-To build it:
+`qmake && make`, then try the included minimal terminal application `qml -I . test-app/test-app.qml`.
 
-qmake && make
+## Licensing
 
-To test it:
-
-qmlscene -I . test-app/test-app.qml
+The project is released under GPL-2.0-or-later. Some files are under compatible licenses inherited from upstream QTermWidget; see `LICENSE` and file headers for details.

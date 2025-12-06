@@ -34,6 +34,8 @@
 
 #include <QProcess>
 
+#include <memory>
+
 class KProcessPrivate;
 
 /**
@@ -69,9 +71,10 @@ public:
         ForwardedChannels = QProcess::ForwardedChannels,
             /**< Both standard output and standard error are forwarded
                  to the parent process' respective channel */
-        OnlyStdoutChannel,
+        OnlyStdoutChannel = QProcess::ForwardedErrorChannel,
             /**< Only standard output is handled; standard error is forwarded */
-        OnlyStderrChannel  /**< Only standard error is handled; standard output is forwarded */
+        OnlyStderrChannel = QProcess::ForwardedOutputChannel
+            /**< Only standard error is handled; standard output is forwarded */
     };
 
     /**
@@ -207,7 +210,7 @@ public:
      * respective functions provided by QProcess.
      *
      * If KProcess determines that the command does not really need a
-     * shell, it will trasparently execute it without one for performance
+     * shell, it will transparently execute it without one for performance
      * reasons.
      *
      * This function must be called before starting the process, obviously.
@@ -320,17 +323,12 @@ protected:
     /**
      * @internal
      */
-    KProcessPrivate * const d_ptr;
+    std::unique_ptr<KProcessPrivate> const d_ptr;
 
 private:
     // hide those
-    using QProcess::setReadChannelMode;
-    using QProcess::readChannelMode;
     using QProcess::setProcessChannelMode;
     using QProcess::processChannelMode;
-
-    Q_PRIVATE_SLOT(d_func(), void _k_forwardStdout())
-    Q_PRIVATE_SLOT(d_func(), void _k_forwardStderr())
 };
 
 /* ----------- kprocess_p.h ---------------- */
@@ -339,24 +337,17 @@ class KProcessPrivate {
     Q_DECLARE_PUBLIC(KProcess)
 
 protected:
-    KProcessPrivate() :
-        openMode(QIODevice::ReadWrite)
+    KProcessPrivate(KProcess *qq) :
+        openMode(QIODevice::ReadWrite),
+        q_ptr(qq)
     {
     }
-    virtual ~KProcessPrivate()
-    {
-    }
-    void writeAll(const QByteArray &buf, int fd);
-    void forwardStd(KProcess::ProcessChannel good, int fd);
-    void _k_forwardStdout();
-    void _k_forwardStderr();
 
     QString prog;
     QStringList args;
-    KProcess::OutputChannelMode outputChannelMode;
     QIODevice::OpenMode openMode;
 
-    KProcess *q_ptr;
+    KProcess *q_ptr = nullptr;
 };
 /* ------------------------------------------- */
 #endif
