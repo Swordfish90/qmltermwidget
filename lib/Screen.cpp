@@ -1400,12 +1400,20 @@ int Screen::copyLineToStream(int line ,
         int length = screenLines[screenLine].count();
 
         //retrieve line from screen image
-        for (int i=start;i < qMin(start+count,length);i++)
+        // clamp start/count to avoid reading past available characters
+        if (start >= length) {
+            count = 0;
+            start = length;
+        } else if (count != -1) {
+            count = qMin(count, length - start);
+        }
+
+        for (int i=start; i < qMin(start+count,length); i++)
         {
             characterBuffer[i-start] = data[i];
         }
 
-        // count cannot be any greater than length
+        // count cannot be any greater than remaining line length
         count = qBound(0,count,length-start);
 
         Q_ASSERT( screenLine < lineProperties.count() );

@@ -2155,23 +2155,26 @@ void TerminalDisplay::scrollBarPositionChanged(int)
 
 void TerminalDisplay::setScroll(int cursor, int slines)
 {
+  const int maxScrollValue = std::max(0, slines - _lines);
+  const int boundedCursor = qBound(0, cursor, maxScrollValue);
+
   // update _scrollBar if the range or value has changed,
   // otherwise return
   //
   // setting the range or value of a _scrollBar will always trigger
   // a repaint, so it should be avoided if it is not necessary
   if ( _scrollBar->minimum() == 0                 &&
-       _scrollBar->maximum() == (slines - _lines) &&
-       _scrollBar->value()   == cursor )
+       _scrollBar->maximum() == maxScrollValue   &&
+       _scrollBar->value()   == boundedCursor )
   {
         return;
   }
 
   disconnect(_scrollBar, SIGNAL(valueChanged(int)), this, SLOT(scrollBarPositionChanged(int)));
-  _scrollBar->setRange(0,slines - _lines);
+  _scrollBar->setRange(0,maxScrollValue);
   _scrollBar->setSingleStep(1);
   _scrollBar->setPageStep(_lines);
-  _scrollBar->setValue(cursor);
+  _scrollBar->setValue(boundedCursor);
   connect(_scrollBar, SIGNAL(valueChanged(int)), this, SLOT(scrollBarPositionChanged(int)));
 }
 
@@ -3977,6 +3980,34 @@ void ScrollBar::setPalette(const QPalette&) {}
 void ScrollBar::setAutoFillBackground(bool) {}
 void ScrollBar::setAttribute(Qt::WidgetAttribute) {}
 bool ScrollBar::underMouse() const { return false; }
-void ScrollBar::handleEvent(QEvent*) {}
+void ScrollBar::handleEvent(QEvent* event)
+{
+    auto *wheel = dynamic_cast<QWheelEvent*>(event);
+    if (!wheel) {
+        return;
+    }
+
+    // Prefer pixelDelta for smooth/trackpad scrolling, fall back to angleDelta
+    int deltaY = wheel->pixelDelta().y();
+    if (deltaY == 0) {
+        deltaY = wheel->angleDelta().y();
+    }
+    if (deltaY == 0) {
+        return;
+    }
+
+    // Qt uses positive delta for scrolling up (towards the user), which is a
+    // smaller scrollbar value.
+    const int steps = deltaY / 120; // 120 == 15 deg * 8
+    int stepCount = steps != 0 ? steps : (deltaY > 0 ? 1 : -1);
+
+    int increment = m_singleStep * stepCount;
+    if (wheel->modifiers() & Qt::ControlModifier) {
+        increment = (m_pageStep ? m_pageStep : m_singleStep) * stepCount;
+    }
+
+    setValue(m_value - increment);
+    wheel->accept();
+}
 
 //#include "TerminalDisplay.moc"
