@@ -564,13 +564,20 @@ void Session::close()
 
     if (isRunning())
     {
+#if defined(Q_OS_MAC)
+        // On macOS, jump straight to SIGKILL to avoid hangs.
+        if (sendSignal(SIGKILL))
+        {
+            return;
+        }
+#else
         // Try SIGHUP, and if unsuccessful, do a hard kill.
         // This is the sequence used by most other terminal emulators like xterm, gnome-terminal, ...
         if (sendSignal(SIGHUP))
         {
             return;
         }
-
+#endif
         qWarning() << "Process " << processId() << " did not die with SIGHUP";
         _shellProcess->closePty();
         if (!_shellProcess->waitForFinished(1000))
