@@ -71,7 +71,7 @@ Session *KSession::createSession(QString name)
     //cool-old-term: There is another check in the code. Not sure if useful.
 
     QString envshell = getenv("SHELL");
-    QString shellProg = envshell.isEmpty() ? envshell : "/bin/bash";
+    QString shellProg = (!envshell.isEmpty()) ? envshell : "/bin/bash";
     session->setProgram(shellProg);
 
     setenv("TERM", "xterm", 1);
