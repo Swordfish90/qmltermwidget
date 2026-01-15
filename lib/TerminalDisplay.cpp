@@ -240,6 +240,24 @@ void TerminalDisplay::fontChange(const QFont&)
   // Get the width from representative normal width characters
   _fontWidth = qRound(static_cast<double>(fm.horizontalAdvance(QLatin1String(REPCHAR)))/static_cast<double>(qstrlen(REPCHAR)));
 
+
+  // On macOS QFont::PreferFullHinting does nothing can leave fractional advances that accumulate; add a small headroom.
+#if defined(Q_OS_MACOS)
+  QFontMetricsF fmf(font());
+  double maxAdvance = 0.0;
+  for (unsigned int i = 0; i < qstrlen(REPCHAR); i++) {
+    maxAdvance = qMax(maxAdvance, fmf.horizontalAdvance(QLatin1Char(REPCHAR[i])));
+  }
+
+  _fontWidth = std::min(_fontWidth, static_cast<int>(std::ceil(maxAdvance)));
+
+  const double headway = std::abs(static_cast<double>(_fontWidth) - maxAdvance);
+
+  if (headway > 0.0001 && headway <= 0.5) {
+    _fontWidth += 1;
+  }
+#endif
+
   _fixedFont = true;
 
   int fw = fm.horizontalAdvance(QLatin1Char(REPCHAR[0]));
