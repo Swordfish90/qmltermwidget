@@ -107,6 +107,7 @@ class KONSOLEPRIVATE_EXPORT TerminalDisplay : public QQuickPaintedItem
    Q_PROPERTY(QSize fontMetrics         READ getFontMetrics                       NOTIFY changedFontMetricSignal )
 
    Q_PROPERTY(bool enableBold           READ getBoldIntense   WRITE setBoldIntense NOTIFY boldIntenseChanged )
+   Q_PROPERTY(bool enableItalic         READ getItalicEnabled WRITE setItalicEnabled NOTIFY italicEnabledChanged )
    Q_PROPERTY(bool fullCursorHeight     READ fullCursorHeight WRITE setFullCursorHeight NOTIFY fullCursorHeightChanged)
    Q_PROPERTY(bool blinkingCursor       READ blinkingCursor   WRITE setBlinkingCursor NOTIFY blinkingCursorStateChanged)
    Q_PROPERTY(bool antialiasText        READ antialias       WRITE setAntialias)
@@ -417,6 +418,15 @@ public:
     bool getBoldIntense() { return _boldIntense; }
 
     /**
+     * Specifies whether italic text rendering is allowed. Defaults to true.
+     */
+    void setItalicEnabled(bool value);
+    /**
+     * Returns true if italic text rendering is allowed.
+     */
+    bool getItalicEnabled() { return _italicEnabled; }
+
+    /**
      * Sets whether or not the current height and width of the
      * terminal in lines and columns is displayed whilst the widget
      * is being resized.
@@ -649,6 +659,7 @@ signals:
     void fullCursorHeightChanged();
     void blinkingCursorStateChanged();
     void boldIntenseChanged();
+    void italicEnabledChanged();
 
 protected:
     bool event( QEvent * ) override;
@@ -822,6 +833,7 @@ private:
     int  _drawTextAdditionHeight;   // additional height to prevent font truncation
     bool _drawTextTestFlag;         // indicates when text drawing metrics are being tested
     bool _boldIntense;   // Whether intense colors should be rendered with bold font
+    bool _italicEnabled; // Whether italic rendition is allowed
 
     int _leftMargin;    // offset
     int _topMargin;    // offset

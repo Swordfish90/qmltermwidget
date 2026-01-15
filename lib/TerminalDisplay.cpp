@@ -343,6 +343,14 @@ void TerminalDisplay::setBoldIntense(bool value)
     }
 }
 
+void TerminalDisplay::setItalicEnabled(bool value)
+{
+    if (_italicEnabled != value) {
+        _italicEnabled = value;
+        emit italicEnabledChanged();
+    }
+}
+
 void TerminalDisplay::setFont(const QFont &f)
 {
     Q_UNUSED(f);
@@ -364,6 +372,7 @@ TerminalDisplay::TerminalDisplay(QQuickItem *parent)
 ,_fontWidth(1)
 ,_fontAscent(1)
 ,_boldIntense(true)
+,_italicEnabled(true)
 ,_lines(1)
 ,_columns(1)
 ,_usedLines(1)
@@ -872,7 +881,7 @@ void TerminalDisplay::drawCharacters(QPainter& painter,
     // setup bold and underline
     bool useBold = ((style->rendition & RE_BOLD) && _boldIntense) || font().bold();
     const bool useUnderline = style->rendition & RE_UNDERLINE || font().underline();
-    const bool useItalic = style->rendition & RE_ITALIC || font().italic();
+    const bool useItalic = ((style->rendition & RE_ITALIC) && _italicEnabled) || font().italic();
     const bool useStrikeOut = style->rendition & RE_STRIKEOUT || font().strikeOut();
     const bool useOverline = style->rendition & RE_OVERLINE || font().overline();
 
