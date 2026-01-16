@@ -3359,6 +3359,7 @@ bool TerminalDisplay::event(QEvent* event)
     case QEvent::PaletteChange:
     case QEvent::ApplicationPaletteChange:
         _scrollBar->setPalette( QApplication::palette() );
+        break;
     case QEvent::InputMethodQuery:
         inputMethodQuery(static_cast<QInputMethodQueryEvent *>(event));
         eventHandled = true;
