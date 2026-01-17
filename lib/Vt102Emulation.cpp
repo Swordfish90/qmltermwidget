@@ -1012,7 +1012,6 @@ QKeyEvent * Vt102Emulation::remapKeyModifiersForMac(QKeyEvent *event) {
   QFlags<Qt::KeyboardModifier> isTheLabeledKeyCommandPressed = modifiers & Qt::ControlModifier;
   QFlags<Qt::KeyboardModifier> isTheLabeledKeyControlPressed = modifiers & Qt::MetaModifier;
   if (isTheLabeledKeyCommandPressed){
-    qDebug("Command is pressed.");
     modifiers &= ~Qt::ControlModifier;
     modifiers |= Qt::MetaModifier;
   } else {
@@ -1020,7 +1019,6 @@ QKeyEvent * Vt102Emulation::remapKeyModifiersForMac(QKeyEvent *event) {
   }
 
   if (isTheLabeledKeyControlPressed) {
-    qDebug("Control is pressed.");
     modifiers &= ~Qt::MetaModifier;
     modifiers |= Qt::ControlModifier;
   } else {
