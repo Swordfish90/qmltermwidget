@@ -54,7 +54,7 @@ void add_custom_color_scheme_dir(const QString& custom_dir)
 }
 
 /*! Helper function to get possible locations of color schemes.
-By default the COLORSCHEMES_DIR is used (linux/BSD/macports).
+By default the COLORSCHEMES_DIRS is used (linux/BSD/macports).
 But in some cases (apple bundle) there can be more locations).
 */
 const QStringList get_color_schemes_dirs()
@@ -62,13 +62,15 @@ const QStringList get_color_schemes_dirs()
 //    qDebug() << __FILE__ << __FUNCTION__;
 
     QStringList rval;
-    QString k(qgetenv("COLORSCHEMES_DIR"));
-    QDir d(k);
+    QDir d;
 
-//    qDebug() << "default COLORSCHEMES_DIR: " << k;
+    QString dirs(qgetenv("COLORSCHEMES_DIRS"));
+    for (auto dirname : dirs.split(":")) {
+        d.setPath(dirname);
 
-    if (d.exists())
-        rval << k.append(QLatin1Char('/'));
+        if (d.exists())
+            rval << dirname.append(QLatin1Char('/'));
+    }
 
 #ifdef Q_OS_MAC
     // subdir in the app location
