@@ -150,6 +150,11 @@ Q_OBJECT
      */
     int foregroundProcessGroup() const;
 
+    /**
+     * Close the underlying pty master/slave pair.
+     */
+    void closePty();
+
   public slots:
 
     /**
@@ -187,9 +192,6 @@ Q_OBJECT
      * @param length Length of @p buffer
      */
     void receivedData(const char* buffer, int length);
-
-  protected:
-      void setupChildProcess() override;
 
   private slots:
     // called when data is received from the terminal process

@@ -27,9 +27,11 @@
 
 // Konsole
 #include "Session.h"
-//#include "TerminalDisplay.h"
 
-using namespace Konsole;
+namespace Konsole {
+class TerminalDisplay;
+class Session;
+}
 
 class KSession : public QObject
 {
@@ -37,8 +39,8 @@ class KSession : public QObject
     Q_PROPERTY(QString  kbScheme  READ  getKeyBindings WRITE setKeyBindings NOTIFY changedKeyBindings)
     Q_PROPERTY(QString  initialWorkingDirectory READ getInitialWorkingDirectory WRITE setInitialWorkingDirectory NOTIFY initialWorkingDirectoryChanged)
     Q_PROPERTY(QString  title READ getTitle WRITE setTitle NOTIFY titleChanged)
-    Q_PROPERTY(QString  shellProgram WRITE setShellProgram)
-    Q_PROPERTY(QStringList  shellProgramArgs WRITE setArgs)
+    Q_PROPERTY(QString  shellProgram READ getShellProgram WRITE setShellProgram)
+    Q_PROPERTY(QStringList  shellProgramArgs READ getShellProgramArgs WRITE setArgs)
     Q_PROPERTY(QString  history READ getHistory)
     Q_PROPERTY(bool hasActiveProcess READ hasActiveProcess)
     Q_PROPERTY(QString foregroundProcessName READ foregroundProcessName)
@@ -50,8 +52,8 @@ public:
 
 public:
     //bool setup();
-    void addView(TerminalDisplay *display);
-    void removeView(TerminalDisplay *display);
+    void addView(Konsole::TerminalDisplay *display);
+    void removeView(Konsole::TerminalDisplay *display);
 
     int getRandomSeed();
     QString getKeyBindings();
@@ -65,8 +67,8 @@ public:
     void setInitialWorkingDirectory(const QString & dir);
     QString getInitialWorkingDirectory();
 
-    //Text codec, default is UTF-8
-    void setTextCodec(QTextCodec * codec);
+    QString getShellProgram() const;
+    QStringList getShellProgramArgs() const;
 
     // History size for scrolling
     void setHistorySize(int lines); //infinite if lines < 0
@@ -166,13 +168,15 @@ protected slots:
     void selectionChanged(bool textSelected);
 
 private slots:
-    Session* createSession(QString name);
+    Konsole::Session* createSession(QString name);
     //Konsole::KTerminalDisplay* createTerminalDisplay(Konsole::Session *session, QQuickItem* parent);
 
 private:
     //Konsole::KTerminalDisplay *m_terminalDisplay;
     QString _initialWorkingDirectory;
-    Session *m_session;
+    QString m_shellProgram;
+    QStringList m_shellArgs;
+    Konsole::Session *m_session;
 
 };
 

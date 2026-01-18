@@ -31,6 +31,7 @@
 #include <QSettings>
 #include <QDir>
 #include <QRegularExpression>
+#include <QRandomGenerator>
 
 
 // KDE
@@ -42,6 +43,7 @@
 //#include <KStandardDirs>
 
 using namespace Konsole;
+using namespace Qt::Literals::StringLiterals;
 
 const ColorEntry ColorScheme::defaultTable[TABLE_COLORS] =
  // The following are almost IBM standard color codes, with some slight
@@ -175,25 +177,21 @@ void ColorScheme::setColorTableEntry(int index , const ColorEntry& entry)
 
     _table[index] = entry;
 }
-ColorEntry ColorScheme::colorEntry(int index , uint randomSeed) const
+ColorEntry ColorScheme::colorEntry(int index) const
 {
     Q_ASSERT( index >= 0 && index < TABLE_COLORS );
 
-    if ( randomSeed != 0 )
-        qsrand(randomSeed);
-
     ColorEntry entry = colorTable()[index];
 
-    if ( randomSeed != 0 &&
-        _randomTable != nullptr &&
+    if ( _randomTable != nullptr &&
         !_randomTable[index].isNull() )
     {
         const RandomizationRange& range = _randomTable[index];
 
 
-        int hueDifference = range.hue ? (qrand() % range.hue) - range.hue/2 : 0;
-        int saturationDifference = range.saturation ? (qrand() % range.saturation) - range.saturation/2 : 0;
-        int  valueDifference = range.value ? (qrand() % range.value) - range.value/2 : 0;
+        int hueDifference = range.hue ? QRandomGenerator::global()->bounded(range.hue) - range.hue/2 : 0;
+        int saturationDifference = range.saturation ? QRandomGenerator::global()->bounded(range.saturation) - range.saturation/2 : 0;
+        int valueDifference = range.value ? QRandomGenerator::global()->bounded(range.value) - range.value/2 : 0;
 
         QColor& color = entry.color;
 
@@ -206,10 +204,10 @@ ColorEntry ColorScheme::colorEntry(int index , uint randomSeed) const
 
     return entry;
 }
-void ColorScheme::getColorTable(ColorEntry* table , uint randomSeed) const
+void ColorScheme::getColorTable(ColorEntry* table) const
 {
     for ( int i = 0 ; i < TABLE_COLORS ; i++ )
-        table[i] = colorEntry(i,randomSeed);
+        table[i] = colorEntry(i);
 }
 bool ColorScheme::randomizedBackgroundColor() const
 {
@@ -337,12 +335,12 @@ void ColorScheme::readColorEntry(QSettings * s , int index)
     ColorEntry entry;
 
     QVariant colorValue = s->value(QLatin1String("Color"));
-    QString colorStr;
+    QStringView colorStr;
     int r, g, b;
     bool ok = false;
     // XXX: Undocumented(?) QSettings behavior: values with commas are parsed
     // as QStringList and others QString
-    if (colorValue.type() == QVariant::StringList)
+    if (colorValue.typeId() == QMetaType::QStringList)
     {
         QStringList rgbList = colorValue.toStringList();
         colorStr = rgbList.join(QLatin1Char(','));
@@ -362,14 +360,14 @@ void ColorScheme::readColorEntry(QSettings * s , int index)
     else
     {
         colorStr = colorValue.toString();
-        QRegularExpression hexColorPattern(QLatin1String("^#[0-9a-f]{6}$"),
-                                           QRegularExpression::CaseInsensitiveOption);
-        if (hexColorPattern.match(colorStr).hasMatch())
+        static const QRegularExpression hexColorPattern{"^#[0-9a-f]{6}$"_L1,
+                                           QRegularExpression::CaseInsensitiveOption};
+        if (hexColorPattern.matchView(colorStr).hasMatch())
         {
-            // Parsing is always ok as already matched by the regexp
-            r = colorStr.midRef(1, 2).toInt(nullptr, 16);
-            g = colorStr.midRef(3, 2).toInt(nullptr, 16);
-            b = colorStr.midRef(5, 2).toInt(nullptr, 16);
+            // If we got a match, colorStr size is 7
+            r = colorStr.sliced(1, 2).toInt(nullptr, 16);
+            g = colorStr.sliced(3, 2).toInt(nullptr, 16);
+            b = colorStr.sliced(5, 2).toInt(nullptr, 16);
             ok = true;
         }
     }
@@ -420,9 +418,9 @@ void ColorScheme::writeColorEntry(KConfig& config , const QString& colorName, co
     // if one of the keys already exists
     if ( !random.isNull() || configGroup.hasKey("MaxRandomHue") )
     {
-        configGroup.writeEntry("MaxRandomHue",(int)random.hue);
-        configGroup.writeEntry("MaxRandomValue",(int)random.value);
-        configGroup.writeEntry("MaxRandomSaturation",(int)random.saturation);
+        configGroup.writeEntry("MaxRandomHue",static_cast<int>(random.hue));
+        configGroup.writeEntry("MaxRandomValue",static_cast<int>(random.value));
+        configGroup.writeEntry("MaxRandomSaturation",static_cast<int>(random.saturation));
     }
 }
 #endif
@@ -517,8 +515,8 @@ void ColorSchemeManager::loadAllColorSchemes()
             failed++;
     }
 
-    /*if ( failed > 0 )
-        qDebug() << "failed to load " << failed << " color schemes.";*/
+    if ( failed > 0 )
+        qDebug() << "failed to load " << failed << " color schemes.";
 
     _haveLoadedAll = true;
 }
