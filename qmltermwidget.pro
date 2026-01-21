@@ -48,17 +48,4 @@ assets.path += $$INSTALL_DIR/$$PLUGIN_IMPORT_PATH
 qmldir.files += $$PWD/src/qmldir
 qmldir.path += $$INSTALL_DIR/$$PLUGIN_IMPORT_PATH
 
-colorschemes.files = $$PWD/lib/color-schemes/*
-colorschemes.path = $$INSTALL_DIR/$$PLUGIN_IMPORT_PATH/color-schemes
-colorschemes2.files = $$PWD/lib/color-schemes/historic/*
-colorschemes2.path = $$INSTALL_DIR/$$PLUGIN_IMPORT_PATH/color-schemes/historic
-
-kblayouts.files = $$PWD/lib/kb-layouts/*
-kblayouts.path = $$INSTALL_DIR/$$PLUGIN_IMPORT_PATH/kb-layouts
-kblayouts2.files = $$PWD/lib/kb-layouts/historic/*
-kblayouts2.path = $$INSTALL_DIR/$$PLUGIN_IMPORT_PATH/kb-layouts/historic
-
-scrollbar.files = $$PWD/src/QMLTermScrollbar.qml
-scrollbar.path = $$INSTALL_DIR/$$PLUGIN_IMPORT_PATH
-
-INSTALLS += target qmldir assets colorschemes colorschemes2 kblayouts kblayouts2 scrollbar
+INSTALLS += target qmldir assets
