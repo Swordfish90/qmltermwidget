@@ -472,9 +472,7 @@ TerminalDisplay::TerminalDisplay(QQuickItem *parent)
   _scrollBar->setVisible(false);
   connect(_scrollBar, SIGNAL(valueChanged(int)), this, SIGNAL(scrollbarParamsChanged(int)));
 
-  // Qt 6.10 compatibility fix: Use Image rendering instead of FramebufferObject.
-  // Tradeoff is performance decrease.
-  setRenderTarget(QQuickPaintedItem::Image);
+  setUseFBORendering(true);
 
 //  setFocusPolicy( Qt::WheelFocus );
 

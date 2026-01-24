@@ -112,6 +112,7 @@ class KONSOLEPRIVATE_EXPORT TerminalDisplay : public QQuickPaintedItem
    Q_PROPERTY(bool blinkingCursor       READ blinkingCursor   WRITE setBlinkingCursor NOTIFY blinkingCursorStateChanged)
    Q_PROPERTY(bool antialiasText        READ antialias       WRITE setAntialias)
    Q_PROPERTY(QStringList availableColorSchemes READ availableColorSchemes NOTIFY availableColorSchemesChanged)
+   Q_PROPERTY(bool useFBORendering      READ useFBORendering WRITE setUseFBORendering)
 
 public:
     /** Constructs a new terminal display widget with the specified parent. */
@@ -400,6 +401,24 @@ public:
      * Returns true if anti-aliasing of text in the terminal is enabled.
      */
     static bool antialias()                 { return _antialiasText;   }
+
+    /**
+     * Sets whether to use FramebufferObject rendering (true) or Image rendering (false).
+     * FramebufferObject is GPU-based and more performant.
+     * Image rendering is CPU-based and causes higher CPU usage, but can solve rendering issues.
+     */
+    void setUseFBORendering(bool useFBO) { 
+        _useFBORendering = useFBO;
+        QQuickPaintedItem::RenderTarget target = useFBO ?
+            QQuickPaintedItem::FramebufferObject : QQuickPaintedItem::Image;
+
+        QQuickPaintedItem::setRenderTarget(target);
+    }
+
+    /**
+     * Returns true if using FramebufferObject rendering, false if using Image.
+     */
+    bool useFBORendering() const { return _useFBORendering; }
 
     /**
      * Specify whether line chars should be drawn by ourselves or left to
@@ -834,6 +853,7 @@ private:
     bool _drawTextTestFlag;         // indicates when text drawing metrics are being tested
     bool _boldIntense;   // Whether intense colors should be rendered with bold font
     bool _italicEnabled; // Whether italic rendition is allowed
+    bool _useFBORendering; // Whether to use FramebufferObject (true) or Image (false)
 
     int _leftMargin;    // offset
     int _topMargin;    // offset
