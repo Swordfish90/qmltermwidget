@@ -472,9 +472,7 @@ TerminalDisplay::TerminalDisplay(QQuickItem *parent)
   _scrollBar->setVisible(false);
   connect(_scrollBar, SIGNAL(valueChanged(int)), this, SIGNAL(scrollbarParamsChanged(int)));
 
-  // TODO Forcing rendering to Framebuffer. We need to determine if this is ok
-  // always or if we need to make this customizable.
-  setRenderTarget(QQuickPaintedItem::FramebufferObject);
+  setUseFBORendering(true);
 
 //  setFocusPolicy( Qt::WheelFocus );
 
