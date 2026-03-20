@@ -40,6 +40,8 @@ KSession::KSession(QObject *parent) :
     connect(m_session, SIGNAL(started()), this, SIGNAL(started()));
     connect(m_session, SIGNAL(finished()), this, SLOT(sessionFinished()));
     connect(m_session, SIGNAL(titleChanged()), this, SIGNAL(titleChanged()));
+    connect(m_session, SIGNAL(baudRateChanged(int)), this, SIGNAL(baudRateChanged(int)));
+    connect(m_session, SIGNAL(baudRateModeChanged(QString)), this, SIGNAL(baudRateModeChanged(QString)));
 }
 
 KSession::~KSession()
@@ -240,6 +242,26 @@ QString KSession::getHistory() const
     historyDecoder.end();
 
     return history;
+}
+
+int KSession::getBaudRate() const
+{
+    return m_session->baudRate();
+}
+
+void KSession::setBaudRate(int bps)
+{
+    m_session->setBaudRate(bps);
+}
+
+QString KSession::getBaudRateMode() const
+{
+    return m_session->baudRateMode();
+}
+
+void KSession::setBaudRateMode(const QString &mode)
+{
+    m_session->setBaudRateMode(mode);
 }
 
 void KSession::sendText(QString text)
