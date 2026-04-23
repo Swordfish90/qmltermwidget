@@ -109,10 +109,17 @@ int  KSession::getRandomSeed()
 void  KSession::addView(Konsole::TerminalDisplay *display)
 {
     m_session->addView(display);
+
+    connect(m_session, &Session::cursorChanged, display,
+            [display](Konsole::Emulation::KeyboardCursorShape cursorShape,
+                      bool blinkingCursorEnabled) {
+                display->setKeyboardCursorShape(cursorShape);
+            });
 }
 
 void KSession::removeView(Konsole::TerminalDisplay *display)
 {
+    disconnect(m_session, nullptr, display, nullptr);
     m_session->removeView(display);
 }
 
