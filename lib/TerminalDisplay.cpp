@@ -1253,7 +1253,7 @@ void TerminalDisplay::updateImage()
         disstrU[p++] = c; //fontMap(c);
         bool lineDraw = isLineChar(newLine[x+0]);
         bool doubleWidth = (x+1 == columnsToUpdate) ? false : (newLine[x+1].character == 0);
-        int charWidth = _fixedFont ? _fontWidth : fm.horizontalAdvance(QChar(c));
+        int charWidth = fm.horizontalAdvance(QChar(c));
         bool bigWidth = _fixedFont && !doubleWidth && charWidth > _fontWidth;
         bool smallWidth = _fixedFont && charWidth < _fontWidth;
         cr = newLine[x].rendition;
@@ -1268,7 +1268,7 @@ void TerminalDisplay::updateImage()
                 continue; // Skip trailing part of multi-col chars.
 
             bool nextIsDoubleWidth = (x+len+1 == columnsToUpdate) ? false : (newLine[x+len+1].character == 0);
-            int nxtCharWidth = _fixedFont ? _fontWidth : fm.horizontalAdvance(QChar(newLine[x+len].character));
+            int nxtCharWidth = fm.horizontalAdvance(QChar(newLine[x+len].character));
             bool nextIsbigWidth = _fixedFont && !nextIsDoubleWidth && nxtCharWidth > _fontWidth;
             bool nextIsSmallWidth = _fixedFont && newLine[x+len].character && nxtCharWidth < _fontWidth;
 
@@ -1928,7 +1928,7 @@ void TerminalDisplay::drawContents(QPainter &paint, const QRect &rect)
 
       bool lineDraw = isLineChar(_image[loc(x,y)]);
       bool doubleWidth = (_image[ qMin(loc(x,y)+1,_imageSize) ].character == 0);
-      int charWidth = _fixedFont ? _fontWidth : fm.horizontalAdvance(QChar(c));
+      int charWidth = fm.horizontalAdvance(QChar(c));
       bool bigWidth = _fixedFont && !doubleWidth && charWidth > _fontWidth;
       bool tooWide = bigWidth && charWidth >= 2 * _fontWidth;
       bool smallWidth = _fixedFont && c && charWidth < _fontWidth;
@@ -1945,7 +1945,7 @@ void TerminalDisplay::drawContents(QPainter &paint, const QRect &rect)
              _image[loc(x+len,y)].rendition == currentRendition &&
              (nxtDoubleWidth = (_image[qMin(loc(x+len,y)+1,_imageSize)].character == 0)) == doubleWidth &&
              !smallWidth &&
-             !(_fixedFont && (nxtC = _image[loc(x+len,y)].character) && (nxtCharWidth = (_fixedFont ? _fontWidth : fm.horizontalAdvance(QChar(nxtC)))) < _fontWidth) &&
+             !(_fixedFont && (nxtC = _image[loc(x+len,y)].character) && (nxtCharWidth = fm.horizontalAdvance(QChar(nxtC))) < _fontWidth) &&
              !bigWidth &&
              !(_fixedFont && !nxtDoubleWidth && nxtC && nxtCharWidth > _fontWidth) &&
              isLineChar(_image[loc(x+len,y)]) == lineDraw) // Assignment!
