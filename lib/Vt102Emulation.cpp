@@ -1109,6 +1109,9 @@ void Vt102Emulation::sendKeyEvent(QKeyEvent* origEvent, bool fromPaste)
             QByteArray bytes = _toUtf8(str);
             textToSend += bytes;
         }
+        else if((modifiers & KeyboardTranslator::CTRL_MOD) && event->key() == Qt::Key_Space) {
+            textToSend += '\0';
+        }
         else if((modifiers & KeyboardTranslator::CTRL_MOD) && event->key() >= 0x40 && event->key() < 0x5f) {
             textToSend += (event->key() & 0x1f);
         }
