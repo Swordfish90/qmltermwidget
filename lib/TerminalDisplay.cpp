@@ -760,6 +760,7 @@ QColor TerminalDisplay::keyboardCursorColor() const
 void TerminalDisplay::setOpacity(qreal opacity)
 {
     _opacity = qBound(static_cast<qreal>(0), opacity, static_cast<qreal>(1));
+    update();
 }
 
 void TerminalDisplay::setBackgroundImage(const QString& backgroundImage)

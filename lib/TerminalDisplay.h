@@ -134,9 +134,6 @@ public:
      */
     uint randomSeed() const;
 
-    /** Sets the opacity of the terminal display. */
-    void setOpacity(qreal opacity);
-
     /** 
      * This enum describes the location where the scroll bar is positioned in the display widget.
      */
@@ -595,6 +592,9 @@ public slots:
      * @see setColorTable(), setForegroundColor()
      */
     void setBackgroundColor(const QColor& color);
+
+    /** Sets the opacity of the terminal display. */
+    void setOpacity(qreal opacity);
 
     /**
      * Sets the text of the display to the specified color.
