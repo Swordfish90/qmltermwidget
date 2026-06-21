@@ -1205,9 +1205,14 @@ void TerminalDisplay::updateImage()
   const int linesToUpdate = qMin(this->_lines, qMax(0,lines  ));
   const int columnsToUpdate = qMin(this->_columns,qMax(0,columns));
 
-  wchar_t *disstrU = new wchar_t[columnsToUpdate];
-  char *dirtyMask = new char[columnsToUpdate+2];
+  if (static_cast<int>(_updateDisstrU.size()) < columnsToUpdate)
+      _updateDisstrU.resize(columnsToUpdate);
+  if (static_cast<int>(_updateDirtyMask.size()) < columnsToUpdate + 2)
+      _updateDirtyMask.resize(columnsToUpdate + 2);
+  wchar_t *disstrU = _updateDisstrU.data();
+  char *dirtyMask = _updateDirtyMask.data();
   QRegion dirtyRegion;
+  QFontMetrics fm(font());
 
   for (y = 0; y < linesToUpdate; ++y)
   {
@@ -1229,7 +1234,6 @@ void TerminalDisplay::updateImage()
         }
     }
 
-    QFontMetrics fm(font());
     if (!_resizing) // not while _resizing, we're expecting a paintEvent
     for (x = 0; x < columnsToUpdate; ++x)
     {
@@ -1355,8 +1359,6 @@ void TerminalDisplay::updateImage()
 
   if ( _hasBlinker && !_blinkTimer->isActive()) _blinkTimer->start( TEXT_BLINK_DELAY );
   if (!_hasBlinker && _blinkTimer->isActive()) { _blinkTimer->stop(); _blinking = false; }
-  delete[] dirtyMask;
-  delete[] disstrU;
 
 }
 

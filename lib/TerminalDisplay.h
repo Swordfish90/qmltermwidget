@@ -28,6 +28,7 @@
 #include <QString>
 #include <QObject>
 #include <QSize>
+#include <vector>
 
 // Konsole
 #include "Filter.h"
@@ -875,6 +876,8 @@ private:
                // only the area [usedLines][usedColumns] in the image contains valid data
 
     int _imageSize;
+    std::vector<wchar_t> _updateDisstrU;
+    std::vector<char>    _updateDirtyMask;
     QVector<LineProperty> _lineProperties;
 
     ColorEntry _colorTable[TABLE_COLORS];
