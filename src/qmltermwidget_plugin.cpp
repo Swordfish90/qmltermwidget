@@ -33,6 +33,13 @@ void QmltermwidgetPlugin::initializeEngine(QQmlEngine *engine, const char *uri)
         }
 
         setenv("KB_LAYOUT_DIR",kbl.toUtf8().constData(),1);
-        setenv("COLORSCHEMES_DIR",cs.toUtf8().constData(),1);
+
+        auto colorschemes = cs.toUtf8();
+
+        if (auto dirs = getenv("COLORSCHEMES_DIRS")) {
+            colorschemes.push_back(':');
+            colorschemes.append(dirs);
+        }
+        setenv("COLORSCHEMES_DIRS",colorschemes.constData(),1);
     }
 }
