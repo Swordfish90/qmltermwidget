@@ -2007,12 +2007,13 @@ void TerminalDisplay::drawContents(QPainter &paint, const QRect &rect)
          QRect textArea = calculateTextArea(tLx, tLy, x, y, len);
 
          //move the calculated area to take account of scaling applied to the painter.
-         //the position of the area from the origin (0,0) is scaled
-         //by the opposite of whatever
-         //transformation has been applied to the painter.  this ensures that
-         //painting does actually start from textArea.topLeft()
-         //(instead of textArea.topLeft() * painter-scale)
-         textArea.moveTopLeft( textScale.inverted().map(textArea.topLeft()) );
+         //Only the origin offset (margins) is inverse-mapped so the painter
+         //scale does not shift it.  The column/row position is left unmapped
+         //so the painter scale correctly doubles it for double-width/height lines.
+         QPoint origin = textScale.inverted().map(QPoint(_leftMargin + tLx, _topMargin + tLy));
+         int colLeft = _fixedFont ? _fontWidth * x : textWidth(0, x, y);
+         int colTop  = _fontHeight * y;
+         textArea.moveTopLeft(QPoint(origin.x() + colLeft, origin.y() + colTop));
 
          //paint text fragment
          drawTextFragment(paint,
