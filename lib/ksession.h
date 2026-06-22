@@ -30,7 +30,6 @@
 
 namespace Konsole {
 class TerminalDisplay;
-class Session;
 }
 
 class KSession : public QObject
@@ -45,6 +44,8 @@ class KSession : public QObject
     Q_PROPERTY(bool hasActiveProcess READ hasActiveProcess)
     Q_PROPERTY(QString foregroundProcessName READ foregroundProcessName)
     Q_PROPERTY(QString currentDir READ currentDir)
+    Q_PROPERTY(int baudRate READ getBaudRate WRITE setBaudRate NOTIFY baudRateChanged)
+    Q_PROPERTY(QString baudRateMode READ getBaudRateMode WRITE setBaudRateMode NOTIFY baudRateModeChanged)
 
 public:
     KSession(QObject *parent = 0);
@@ -75,6 +76,12 @@ public:
     int historySize() const;
 
     QString getHistory() const;
+
+    // Baud rate emulation
+    int getBaudRate() const;
+    void setBaudRate(int bps);
+    QString getBaudRateMode() const;
+    void setBaudRateMode(const QString &mode);
 
     // Sets whether flow control is enabled
     void setFlowControlEnabled(bool enabled);
@@ -134,6 +141,9 @@ signals:
     void matchFound(int startColumn, int startLine, int endColumn, int endLine);
     void noMatchFound();
 
+    void baudRateChanged(int newRate);
+    void baudRateModeChanged(const QString &newMode);
+
 public slots:
     /*! Set named key binding for given widget
      */
@@ -169,10 +179,8 @@ protected slots:
 
 private slots:
     Konsole::Session* createSession(QString name);
-    //Konsole::KTerminalDisplay* createTerminalDisplay(Konsole::Session *session, QQuickItem* parent);
 
 private:
-    //Konsole::KTerminalDisplay *m_terminalDisplay;
     QString _initialWorkingDirectory;
     QString m_shellProgram;
     QStringList m_shellArgs;

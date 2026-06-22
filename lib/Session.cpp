@@ -112,8 +112,8 @@ Session::Session(QObject* parent) :
 
     connect( _shellProcess,SIGNAL(receivedData(const char *,int)),this,
              SLOT(onReceiveBlock(const char *,int)) );
-    connect( _emulation,SIGNAL(sendData(const char *,int)),_shellProcess,
-             SLOT(sendData(const char *,int)) );
+    connect( _emulation,SIGNAL(sendData(const char *,int)),this,
+             SLOT(sendToShellProcess(const char *,int)) );
     connect( _emulation,SIGNAL(lockPtyRequest(bool)),_shellProcess,SLOT(lockPty(bool)) );
     connect( _emulation,SIGNAL(useUtf8Request(bool)),_shellProcess,SLOT(setUtf8Mode(bool)) );
 
@@ -124,6 +124,15 @@ Session::Session(QObject* parent) :
     _monitorTimer = new QTimer(this);
     _monitorTimer->setSingleShot(true);
     connect(_monitorTimer, SIGNAL(timeout()), this, SLOT(monitorTimerDone()));
+
+    //setup baud rate throttle timers
+    _outputThrottleTimer = new QTimer(this);
+    _outputThrottleTimer->setSingleShot(true);
+    connect(_outputThrottleTimer, &QTimer::timeout, this, &Session::_flushOutputBuffer);
+
+    _inputThrottleTimer = new QTimer(this);
+    _inputThrottleTimer->setSingleShot(true);
+    connect(_inputThrottleTimer, &QTimer::timeout, this, &Session::_flushInputBuffer);
 }
 
 WId Session::windowId() const
@@ -942,8 +951,93 @@ void Session::zmodemFinished()
 */
 void Session::onReceiveBlock( const char * buf, int len )
 {
-    _emulation->receiveData( buf, len );
-    emit receivedData( QString::fromLatin1( buf, len ) );
+    if (_baudIsOff() || !_baudAffectsDisplay()) {
+        _emulation->receiveData( buf, len );
+        emit receivedData( QString::fromLatin1( buf, len ) );
+        return;
+    }
+    _outputBuffer.append(buf, len);
+    if (!_outputThrottleTimer->isActive())
+        _outputThrottleTimer->start(_baudCharIntervalMs());
+}
+
+void Session::_flushOutputBuffer()
+{
+    if (_outputBuffer.isEmpty()) return;
+    const char ch = _outputBuffer.at(0);
+    _outputBuffer.remove(0, 1);
+    _emulation->receiveData(&ch, 1);
+    emit receivedData(QString::fromLatin1(&ch, 1));
+    if (!_outputBuffer.isEmpty())
+        _outputThrottleTimer->start(_baudCharIntervalMs());
+}
+
+void Session::sendToShellProcess( const char * data, int len )
+{
+    if (_baudIsOff() || !_baudAffectsInput() || !_baudIsAuthentic()) {
+        _shellProcess->sendData( data, len );
+        return;
+    }
+    _inputBuffer.append(data, len);
+    if (!_inputThrottleTimer->isActive())
+        _inputThrottleTimer->start(_baudCharIntervalMs());
+}
+
+void Session::_flushInputBuffer()
+{
+    if (_inputBuffer.isEmpty()) return;
+    const char ch = _inputBuffer.at(0);
+    _inputBuffer.remove(0, 1);
+    _shellProcess->sendData(&ch, 1);
+    if (!_inputBuffer.isEmpty())
+        _inputThrottleTimer->start(_baudCharIntervalMs());
+}
+
+bool Session::_baudAffectsDisplay() const
+{
+    return _baudRateMode.startsWith(QLatin1String("display-")) || _baudRateMode.startsWith(QLatin1String("both-"));
+}
+bool Session::_baudAffectsInput() const
+{
+    return _baudRateMode.startsWith(QLatin1String("input-")) || _baudRateMode.startsWith(QLatin1String("both-"));
+}
+bool Session::_baudIsAuthentic() const
+{
+    return _baudRateMode.endsWith(QLatin1String("-authentic"));
+}
+bool Session::_baudIsOff() const
+{
+    return _baudRateMode == QLatin1String("off") || _baudRate <= 0;
+}
+int Session::_baudCharIntervalMs() const
+{
+    return qMax(1, 8000 / _baudRate);
+}
+
+void Session::setBaudRate(int bps)
+{
+    if (_baudRate == bps) return;
+    _baudRate = bps;
+    emit baudRateChanged(bps);
+}
+
+void Session::setBaudRateMode(const QString &mode)
+{
+    if (_baudRateMode == mode) return;
+    _baudRateMode = mode;
+    if (_baudIsOff()) {
+        // Drain buffers immediately when throttling is disabled
+        if (!_outputBuffer.isEmpty()) {
+            _emulation->receiveData(_outputBuffer.constData(), _outputBuffer.size());
+            emit receivedData(QString::fromLatin1(_outputBuffer));
+            _outputBuffer.clear();
+        }
+        if (!_inputBuffer.isEmpty()) {
+            _shellProcess->sendData(_inputBuffer.constData(), _inputBuffer.size());
+            _inputBuffer.clear();
+        }
+    }
+    emit baudRateModeChanged(mode);
 }
 
 QSize Session::size()

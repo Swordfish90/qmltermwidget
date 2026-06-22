@@ -25,8 +25,10 @@
 #ifndef SESSION_H
 #define SESSION_H
 
+#include <QByteArray>
 #include <QProcess>
 #include <QStringList>
+#include <QTimer>
 
 #include "Emulation.h"
 #include "History.h"
@@ -60,6 +62,8 @@ public:
     Q_PROPERTY(int processId READ processId)
     Q_PROPERTY(QString keyBindings READ keyBindings WRITE setKeyBindings)
     Q_PROPERTY(QSize size READ size WRITE setSize)
+    Q_PROPERTY(int baudRate READ baudRate WRITE setBaudRate NOTIFY baudRateChanged)
+    Q_PROPERTY(QString baudRateMode READ baudRateMode WRITE setBaudRateMode NOTIFY baudRateModeChanged)
 
     /**
      * Constructs a new session.
@@ -365,6 +369,12 @@ public:
      */
     bool hasDarkBackground() const;
 
+    // Baud rate emulation
+    int baudRate() const { return _baudRate; }
+    void setBaudRate(int bps);
+    QString baudRateMode() const { return _baudRateMode; }
+    void setBaudRateMode(const QString &mode);
+
     /**
      * Attempts to get the shell program to redraw the current display area.
      * This can be used after clearing the screen, for example, to get the
@@ -427,6 +437,9 @@ signals:
      * Emitted when output is received from the terminal process.
      */
     void receivedData( const QString & text );
+
+    void baudRateChanged(int newRate);
+    void baudRateModeChanged(const QString &newMode);
 
     /** Emitted when the session's title has changed. */
     void titleChanged();
@@ -501,7 +514,6 @@ private slots:
 
 //  void fireZModemDetected();
 
-    void onReceiveBlock( const char * buffer, int len );
     void monitorTimerDone();
 
     void onViewSizeChange(int height, int width);
@@ -511,6 +523,14 @@ private slots:
 
     //automatically detach views from sessions when view is destroyed
     void viewDestroyed(QObject * view);
+
+protected slots:
+    void onReceiveBlock( const char * buffer, int len );
+    void sendToShellProcess( const char * data, int len );
+
+private slots:
+    void _flushOutputBuffer();
+    void _flushInputBuffer();
 
 //  void zmodemReadStatus();
 //  void zmodemReadAndSendBlock();
@@ -574,6 +594,20 @@ private:
     QString        _profileKey;
 
     bool _hasDarkBackground;
+
+    // Baud rate throttling
+    int _baudRate = 0;
+    QString _baudRateMode = QStringLiteral("off");
+    QByteArray _outputBuffer;
+    QByteArray _inputBuffer;
+    QTimer *_outputThrottleTimer = nullptr;
+    QTimer *_inputThrottleTimer  = nullptr;
+
+    bool _baudAffectsDisplay() const;
+    bool _baudAffectsInput()   const;
+    bool _baudIsAuthentic()    const;
+    bool _baudIsOff()          const;
+    int  _baudCharIntervalMs() const;
 
     ProcessInfo *_foregroundProcessInfo;
     int _foregroundPid;
