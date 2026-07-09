@@ -31,85 +31,14 @@
 
 #include <qfile.h>
 
-#ifdef Q_OS_WIN
-# include <windows.h>
-#else
-# include <unistd.h>
-# include <cerrno>
-#endif
-
-#ifndef Q_OS_WIN
-# define STD_OUTPUT_HANDLE 1
-# define STD_ERROR_HANDLE 2
-#endif
-
-#ifdef _WIN32_WCE
-#include <stdio.h>
-#endif
-
-void KProcessPrivate::writeAll(const QByteArray &buf, int fd)
-{
-#ifdef Q_OS_WIN
-#ifndef _WIN32_WCE
-    HANDLE h = GetStdHandle(fd);
-    if (h) {
-        DWORD wr;
-        WriteFile(h, buf.data(), buf.size(), &wr, 0);
-    }
-#else
-    fwrite(buf.data(), 1, buf.size(), (FILE*)fd);
-#endif
-#else
-    int off = 0;
-    do {
-        int ret = ::write(fd, buf.data() + off, buf.size() - off);
-        if (ret < 0) {
-            if (errno != EINTR)
-                return;
-        } else {
-            off += ret;
-        }
-    } while (off < buf.size());
-#endif
-}
-
-void KProcessPrivate::forwardStd(KProcess::ProcessChannel good, int fd)
-{
-    Q_Q(KProcess);
-
-    QProcess::ProcessChannel oc = q->readChannel();
-    q->setReadChannel(good);
-    writeAll(q->readAll(), fd);
-    q->setReadChannel(oc);
-}
-
-void KProcessPrivate::_k_forwardStdout()
-{
-#ifndef _WIN32_WCE
-    forwardStd(KProcess::StandardOutput, STD_OUTPUT_HANDLE);
-#else
-    forwardStd(KProcess::StandardOutput, (int)stdout);
-#endif
-}
-
-void KProcessPrivate::_k_forwardStderr()
-{
-#ifndef _WIN32_WCE
-    forwardStd(KProcess::StandardError, STD_ERROR_HANDLE);
-#else
-    forwardStd(KProcess::StandardError, (int)stderr);
-#endif
-}
-
 /////////////////////////////
 // public member functions //
 /////////////////////////////
 
 KProcess::KProcess(QObject *parent) :
     QProcess(parent),
-    d_ptr(new KProcessPrivate)
+    d_ptr(new KProcessPrivate(this))
 {
-    d_ptr->q_ptr = this;
     setOutputChannelMode(ForwardedChannels);
 }
 
@@ -121,37 +50,16 @@ KProcess::KProcess(KProcessPrivate *d, QObject *parent) :
     setOutputChannelMode(ForwardedChannels);
 }
 
-KProcess::~KProcess()
-{
-    delete d_ptr;
-}
+KProcess::~KProcess() = default;
 
 void KProcess::setOutputChannelMode(OutputChannelMode mode)
 {
-    Q_D(KProcess);
-
-    d->outputChannelMode = mode;
-    disconnect(this, SIGNAL(readyReadStandardOutput()));
-    disconnect(this, SIGNAL(readyReadStandardError()));
-    switch (mode) {
-    case OnlyStdoutChannel:
-        connect(this, SIGNAL(readyReadStandardError()), SLOT(_k_forwardStderr()));
-        break;
-    case OnlyStderrChannel:
-        connect(this, SIGNAL(readyReadStandardOutput()), SLOT(_k_forwardStdout()));
-        break;
-    default:
-        QProcess::setProcessChannelMode((ProcessChannelMode)mode);
-        return;
-    }
-    QProcess::setProcessChannelMode(QProcess::SeparateChannels);
+    QProcess::setProcessChannelMode(static_cast<ProcessChannelMode>(mode));
 }
 
 KProcess::OutputChannelMode KProcess::outputChannelMode() const
 {
-    Q_D(const KProcess);
-
-    return d->outputChannelMode;
+    return static_cast<OutputChannelMode>(QProcess::processChannelMode());
 }
 
 void KProcess::setNextOpenMode(QIODevice::OpenMode mode)
@@ -165,7 +73,7 @@ void KProcess::setNextOpenMode(QIODevice::OpenMode mode)
 
 void KProcess::clearEnvironment()
 {
-    setEnvironment(QStringList() << QString::fromLatin1(DUMMYENV));
+    setEnvironment(QStringList{QString::fromLatin1(DUMMYENV)});
 }
 
 void KProcess::setEnv(const QString &name, const QString &value, bool overwrite)
@@ -177,14 +85,16 @@ void KProcess::setEnv(const QString &name, const QString &value, bool overwrite)
     }
     QString fname(name);
     fname.append(QLatin1Char('='));
-    for (QStringList::Iterator it = env.begin(); it != env.end(); ++it)
-        if ((*it).startsWith(fname)) {
-            if (overwrite) {
-                *it = fname.append(value);
-                setEnvironment(env);
-            }
-            return;
+    auto it = std::find_if(env.begin(), env.end(), [&fname](const QString &s) {
+        return s.startsWith(fname);
+    });
+    if (it != env.end()) {
+        if (overwrite) {
+            *it = fname.append(value);
+            setEnvironment(env);
         }
+        return;
+    }
     env.append(fname.append(value));
     setEnvironment(env);
 }
@@ -198,14 +108,16 @@ void KProcess::unsetEnv(const QString &name)
     }
     QString fname(name);
     fname.append(QLatin1Char('='));
-    for (QStringList::Iterator it = env.begin(); it != env.end(); ++it)
-        if ((*it).startsWith(fname)) {
-            env.erase(it);
-            if (env.isEmpty())
-                env.append(QString::fromLatin1(DUMMYENV));
-            setEnvironment(env);
-            return;
+    auto it = std::find_if(env.begin(), env.end(), [&fname](const QString &s) {
+        return s.startsWith(fname);
+    });
+    if (it != env.end()) {
+        env.erase(it);
+        if (env.isEmpty()) {
+            env.append(QString::fromLatin1(DUMMYENV));
         }
+        setEnvironment(env);
+    }
 }
 
 void KProcess::setProgram(const QString &exe, const QStringList &args)
@@ -381,7 +293,7 @@ int KProcess::startDetached()
     qint64 pid;
     if (!QProcess::startDetached(d->prog, d->args, workingDirectory(), &pid))
         return 0;
-    return (int) pid;
+    return static_cast<int>(pid);
 }
 
 // static
@@ -390,7 +302,7 @@ int KProcess::startDetached(const QString &exe, const QStringList &args)
     qint64 pid;
     if (!QProcess::startDetached(exe, args, QString(), &pid))
         return 0;
-    return (int) pid;
+    return static_cast<int>(pid);
 }
 
 // static

@@ -35,20 +35,15 @@
 
 #define KMAXINT ((int)(~0U >> 1))
 
-struct KPtyDevicePrivate;
+class KPtyDevicePrivate;
 class QSocketNotifier;
-
-#define Q_DECLARE_PRIVATE_MI(Class, SuperClass) \
-    inline Class##Private* d_func() { return reinterpret_cast<Class##Private *>(SuperClass::d_ptr); } \
-    inline const Class##Private* d_func() const { return reinterpret_cast<const Class##Private *>(SuperClass::d_ptr); } \
-    friend struct Class##Private;
 
 /**
  * Encapsulates KPty into a QIODevice, so it can be used with Q*Stream, etc.
  */
 class KPtyDevice : public QIODevice, public KPty {
     Q_OBJECT
-    Q_DECLARE_PRIVATE_MI(KPtyDevice, KPty)
+    Q_DECLARE_PRIVATE_D(KPty::d_ptr, KPtyDevice)
 
 public:
 
@@ -332,10 +327,11 @@ private:
     int totalSize;
 };
 
-struct KPtyDevicePrivate : public KPtyPrivate {
+class KPtyDevicePrivate : public KPtyPrivate {
 
     Q_DECLARE_PUBLIC(KPtyDevice)
 
+public:
     KPtyDevicePrivate(KPty* parent) :
         KPtyPrivate(parent),
         emittedReadyRead(false), emittedBytesWritten(false),

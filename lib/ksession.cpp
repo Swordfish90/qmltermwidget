@@ -22,9 +22,13 @@
 
 // Own
 #include "ksession.h"
+#include "TerminalDisplay.h"
 
 // Qt
-#include <QTextCodec>
+#include <QApplication>
+#include <QGuiApplication>
+#include <QPointer>
+#include <QRegularExpression>
 
 // Konsole
 #include "KeyboardTranslator.h"
@@ -36,6 +40,7 @@ KSession::KSession(QObject *parent) :
     connect(m_session, SIGNAL(started()), this, SIGNAL(started()));
     connect(m_session, SIGNAL(finished()), this, SLOT(sessionFinished()));
     connect(m_session, SIGNAL(titleChanged()), this, SIGNAL(titleChanged()));
+    connect(m_session, SIGNAL(receivedData(const QString &)), this, SIGNAL(receivedData(const QString &)));
 }
 
 KSession::~KSession()
@@ -53,7 +58,7 @@ void KSession::setTitle(QString name)
 }
 
 
-Session *KSession::createSession(QString name)
+Konsole::Session *KSession::createSession(QString name)
 {
     Session *session = new Session();
 
@@ -69,8 +74,9 @@ Session *KSession::createSession(QString name)
 
     //cool-old-term: There is another check in the code. Not sure if useful.
 
-    QString envshell = getenv("SHELL");
-    QString shellProg = envshell != NULL ? envshell : "/bin/bash";
+    const QByteArray envshell = qgetenv("SHELL");
+    const QString shellProg = envshell.isEmpty() ? QStringLiteral("/bin/bash") : QString::fromUtf8(envshell);
+    m_shellProgram = shellProg;
     session->setProgram(shellProg);
 
     setenv("TERM", "xterm", 1);
@@ -78,10 +84,9 @@ Session *KSession::createSession(QString name)
     //session->setProgram();
 
     QStringList args("");
+    m_shellArgs = args;
     session->setArguments(args);
     session->setAutoClose(true);
-
-    session->setCodec(QTextCodec::codecForName("UTF-8"));
 
     session->setFlowControlEnabled(true);
     session->setHistoryType(HistoryTypeBuffer(1000));
@@ -102,12 +107,12 @@ int  KSession::getRandomSeed()
     return m_session->sessionId() * 31;
 }
 
-void  KSession::addView(TerminalDisplay *display)
+void  KSession::addView(Konsole::TerminalDisplay *display)
 {
     m_session->addView(display);
 }
 
-void KSession::removeView(TerminalDisplay *display)
+void KSession::removeView(Konsole::TerminalDisplay *display)
 {
     m_session->removeView(display);
 }
@@ -172,6 +177,7 @@ void KSession::setEnvironment(const QStringList &environment)
 
 void KSession::setShellProgram(const QString &progname)
 {
+    m_shellProgram = progname;
     m_session->setProgram(progname);
 }
 
@@ -188,14 +194,20 @@ QString KSession::getInitialWorkingDirectory()
     return _initialWorkingDirectory;
 }
 
-void KSession::setArgs(const QStringList &args)
+QString KSession::getShellProgram() const
 {
-    m_session->setArguments(args);
+    return m_shellProgram;
 }
 
-void KSession::setTextCodec(QTextCodec *codec)
+QStringList KSession::getShellProgramArgs() const
 {
-    m_session->setCodec(codec);
+    return m_shellArgs;
+}
+
+void KSession::setArgs(const QStringList &args)
+{
+    m_shellArgs = args;
+    m_session->setArguments(args);
 }
 
 void KSession::setHistorySize(int lines)
@@ -256,7 +268,12 @@ void KSession::clearScreen()
 
 void KSession::search(const QString &regexp, int startLine, int startColumn, bool forwards)
 {
-    HistorySearch *history = new HistorySearch( QPointer<Emulation>(m_session->emulation()), QRegExp(regexp), forwards, startColumn, startLine, this);
+    HistorySearch *history = new HistorySearch(QPointer<Emulation>(m_session->emulation()),
+                                               QRegularExpression(regexp),
+                                               forwards,
+                                               startColumn,
+                                               startLine,
+                                               this);
     connect( history, SIGNAL(matchFound(int,int,int,int)), this, SIGNAL(matchFound(int,int,int,int)));
     connect( history, SIGNAL(noMatchFound()), this, SIGNAL(noMatchFound()));
     history->search();

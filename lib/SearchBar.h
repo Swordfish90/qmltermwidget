@@ -19,7 +19,7 @@
 #ifndef _SEARCHBAR_H
 #define	_SEARCHBAR_H
 
-#include <QRegExp>
+#include <QRegularExpression>
 
 #include "ui_SearchBar.h"
 #include "HistorySearch.h"
@@ -37,12 +37,14 @@ public:
 
 public slots:
     void noMatchFound();
+    void hide();
 
 signals:
     void searchCriteriaChanged();
     void highlightMatchesChanged(bool highlightMatches);
     void findNext();
     void findPrevious();
+    void madeHidden();
 
 protected:
     void keyReleaseEvent(QKeyEvent* keyEvent) override;

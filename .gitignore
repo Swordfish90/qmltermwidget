@@ -4,3 +4,7 @@
 moc_*.cpp
 moc_*.h
 /.qmake.stash
+.DS_store
+build
+.kdev4
+*.whl

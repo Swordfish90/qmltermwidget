@@ -24,8 +24,10 @@
 // Qt
 #include <QColor>
 #include <QPointer>
-//#include <QWidget>
 #include <QQuickPaintedItem>
+#include <QString>
+#include <QObject>
+#include <QSize>
 
 // Konsole
 #include "Filter.h"
@@ -46,7 +48,6 @@ class QTimer;
 class QEvent;
 class QGridLayout;
 class QKeyEvent;
-class QScrollBar;
 class QShowEvent;
 class QHideEvent;
 class QTimerEvent;
@@ -78,6 +79,7 @@ namespace Konsole
 extern unsigned short vt100_graphics[32];
 
 class ScreenWindow;
+class ScrollBar;
 
 /**
  * A widget which displays output from a terminal emulation and sends input keypresses and mouse activity
@@ -105,10 +107,12 @@ class KONSOLEPRIVATE_EXPORT TerminalDisplay : public QQuickPaintedItem
    Q_PROPERTY(QSize fontMetrics         READ getFontMetrics                       NOTIFY changedFontMetricSignal )
 
    Q_PROPERTY(bool enableBold           READ getBoldIntense   WRITE setBoldIntense NOTIFY boldIntenseChanged )
+   Q_PROPERTY(bool enableItalic         READ getItalicEnabled WRITE setItalicEnabled NOTIFY italicEnabledChanged )
    Q_PROPERTY(bool fullCursorHeight     READ fullCursorHeight WRITE setFullCursorHeight NOTIFY fullCursorHeightChanged)
    Q_PROPERTY(bool blinkingCursor       READ blinkingCursor   WRITE setBlinkingCursor NOTIFY blinkingCursorStateChanged)
    Q_PROPERTY(bool antialiasText        READ antialias       WRITE setAntialias)
    Q_PROPERTY(QStringList availableColorSchemes READ availableColorSchemes NOTIFY availableColorSchemesChanged)
+   Q_PROPERTY(bool useFBORendering      READ useFBORendering WRITE setUseFBORendering)
 
 public:
     /** Constructs a new terminal display widget with the specified parent. */
@@ -399,6 +403,24 @@ public:
     static bool antialias()                 { return _antialiasText;   }
 
     /**
+     * Sets whether to use FramebufferObject rendering (true) or Image rendering (false).
+     * FramebufferObject is GPU-based and more performant.
+     * Image rendering is CPU-based and causes higher CPU usage, but can solve rendering issues.
+     */
+    void setUseFBORendering(bool useFBO) { 
+        _useFBORendering = useFBO;
+        QQuickPaintedItem::RenderTarget target = useFBO ?
+            QQuickPaintedItem::FramebufferObject : QQuickPaintedItem::Image;
+
+        QQuickPaintedItem::setRenderTarget(target);
+    }
+
+    /**
+     * Returns true if using FramebufferObject rendering, false if using Image.
+     */
+    bool useFBORendering() const { return _useFBORendering; }
+
+    /**
      * Specify whether line chars should be drawn by ourselves or left to
      * underlying font rendering libraries.
      */
@@ -413,6 +435,15 @@ public:
      * Returns true if characters with intense colors are rendered in bold.
      */
     bool getBoldIntense() { return _boldIntense; }
+
+    /**
+     * Specifies whether italic text rendering is allowed. Defaults to true.
+     */
+    void setItalicEnabled(bool value);
+    /**
+     * Returns true if italic text rendering is allowed.
+     */
+    bool getItalicEnabled() { return _italicEnabled; }
 
     /**
      * Sets whether or not the current height and width of the
@@ -465,11 +496,18 @@ public:
 
     // maps a point on the widget to the position ( ie. line and column )
     // of the character at that point.
-
-    void getCharacterPosition(const QPoint& widgetPoint,int& line,int& column) const;
+    void getCharacterPosition(const QPointF& widgetPoint,int& line,int& column) const;
 
     void disableBracketedPasteMode(bool disable) { _disabledBracketedPasteMode = disable; }
     bool bracketedPasteModeIsDisabled() const { return _disabledBracketedPasteMode; }
+
+    int mouseAutohideDelay() const { return _mouseAutohideDelay; }
+
+    /**
+    * hide the mouse cursor after @param delay milliseconds of inactivity
+    * @param delay < 0 deactivates the behavior
+    */
+    void autoHideMouseAfter(int delay);
 
 public slots:
 
@@ -479,7 +517,7 @@ public slots:
      */
     void updateImage();
 
-    /** Essentially calles processFilters().
+    /** Essentially calls processFilters().
      */
     void updateFilters();
 
@@ -525,7 +563,7 @@ public slots:
     void outputSuspended(bool suspended);
 
     /**
-     * Sets whether the program whoose output is being displayed in the view
+     * Sets whether the program whose output is being displayed in the view
      * is interested in mouse events.
      *
      * If this is set to true, mouse signals will be emitted by the view when the user clicks, drags
@@ -640,6 +678,7 @@ signals:
     void fullCursorHeightChanged();
     void blinkingCursorStateChanged();
     void boldIntenseChanged();
+    void italicEnabledChanged();
 
 protected:
     bool event( QEvent * ) override;
@@ -651,6 +690,8 @@ protected:
     virtual void fontChange(const QFont &font);
     void focusInEvent(QFocusEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
+    // void enterEvent(QEnterEvent* event) override;
+    // void leaveEvent(QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void mouseDoubleClickEvent(QMouseEvent* ev) override;
     void mousePressEvent( QMouseEvent* ) override;
@@ -679,7 +720,7 @@ protected:
     //     - A space (returns ' ')
     //     - Part of a word (returns 'a')
     //     - Other characters (returns the input character)
-    QChar charClass(QChar ch) const;
+    QChar charClass(const Character &ch) const;
 
     void clearImage();
 
@@ -691,7 +732,7 @@ protected:
 
     // QMLTermWidget
     void paint(QPainter * painter);
-    virtual void geometryChanged(const QRectF & newGeometry, const QRectF & oldGeometry);
+    virtual void geometryChange(const QRectF & newGeometry, const QRectF & oldGeometry) override;
     void inputMethodQuery(QInputMethodQueryEvent *event);
     void itemChange(ItemChange change, const ItemChangeData & value);
 
@@ -726,7 +767,7 @@ private:
     // draws a section of text, all the text in this section
     // has a common color and style
     void drawTextFragment(QPainter& painter, const QRect& rect,
-                          const std::wstring& text, const Character* style);
+                          const std::wstring& text, const Character* style, bool tooWide);
     // draws the background for a text fragment
     // if useOpacitySetting is true then the color's alpha value will be set to
     // the display's transparency (set with setOpacity()), otherwise the background
@@ -738,7 +779,8 @@ private:
                                        const QColor& backgroundColor , bool& invertColors);
     // draws the characters or line graphics in a text fragment
     void drawCharacters(QPainter& painter, const QRect& rect,  const std::wstring& text,
-                                           const Character* style, bool invertCharacterColor);
+                                           const Character* style, bool invertCharacterColor,
+                                           bool tooWide = false);
     // draws a string of line graphics
     void drawLineCharString(QPainter& painter, int x, int y,
                             const std::wstring& str, const Character* attributes) const;
@@ -766,10 +808,14 @@ private:
     // the left and right are ignored.
     void scrollImage(int lines , const QRect& region);
 
+    // shows the multiline prompt
+    bool multilineConfirmation(const QString& text);
+
     void calcGeometry();
     void propagateSize();
     void updateImageSize();
     void makeImage();
+    void calDrawTextAdditionHeight(QPainter& painter);
 
     void paintFilters(QPainter& painter);
 
@@ -785,8 +831,10 @@ private:
 
     bool handleShortcutOverrideEvent(QKeyEvent* event);
 
-    bool isLineChar(wchar_t c) const;
+    bool isLineChar(Character c) const;
     bool isLineCharString(const std::wstring& string) const;
+
+    void hideStaleMouse() const; // conditionally hides the mouse cursor
 
     // the window onto the terminal screen which this display
     // is currently showing.
@@ -797,10 +845,15 @@ private:
     QGridLayout* _gridLayout;
 
     bool _fixedFont; // has fixed pitch
+    bool _fixedFont_original; // used only in textWidth()
     int  _fontHeight;     // height
     int  _fontWidth;     // width
     int  _fontAscent;     // ascend
+    int  _drawTextAdditionHeight;   // additional height to prevent font truncation
+    bool _drawTextTestFlag;         // indicates when text drawing metrics are being tested
     bool _boldIntense;   // Whether intense colors should be rendered with bold font
+    bool _italicEnabled; // Whether italic rendition is allowed
+    bool _useFBORendering; // Whether to use FramebufferObject (true) or Image (false)
 
     int _leftMargin;    // offset
     int _topMargin;    // offset
@@ -845,7 +898,7 @@ private:
     bool    _columnSelectionMode;
 
     QClipboard*  _clipboard;
-    QScrollBar* _scrollBar;
+    ScrollBar* _scrollBar;
     QTermWidget::ScrollBarPosition _scrollbarLocation;
     QString     _wordCharacters;
     int         _bellMode;
@@ -860,6 +913,7 @@ private:
     bool _isFixedSize; //Columns / lines are locked.
     QTimer* _blinkTimer;  // active when hasBlinker
     QTimer* _blinkCursorTimer;  // active when hasBlinkingCursor
+    static std::shared_ptr<QTimer> _hideMouseTimer;
 
     //QMenu* _drop;
     QString _dropText;
@@ -958,6 +1012,8 @@ private:
 
     bool _drawLineChars;
 
+    int _mouseAutohideDelay;
+
 public:
     static void setTransparencyEnabled(bool enable)
     {
@@ -978,6 +1034,52 @@ protected:
 private:
     QWidget* widget() const { return static_cast<QWidget*>(parent()); }
     int _timerId;
+};
+
+class ScrollBar : public QObject
+{
+Q_OBJECT
+public:
+    explicit ScrollBar(QObject* parent = nullptr);
+
+    void setRange(int min, int max);
+    void setSingleStep(int step);
+    void setPageStep(int step);
+    void setValue(int value);
+    int value() const;
+    int minimum() const;
+    int maximum() const;
+
+    bool isHidden() const;
+    void hide();
+    void show();
+    void setVisible(bool vis);
+
+    int width() const;
+    QSize sizeHint() const;
+    void resize(int w, int h);
+    void move(const QPoint&); // no-op placeholder
+
+    void setCursor(Qt::CursorShape); // no-op
+    void setPalette(const QPalette&); // no-op
+    void setAutoFillBackground(bool); // no-op
+    void setAttribute(Qt::WidgetAttribute); // no-op
+    bool underMouse() const;
+    bool isTransient() const { return false; }
+    void handleEvent(QEvent*); // no-op hook
+
+Q_SIGNALS:
+    void valueChanged(int value);
+
+private:
+    int m_minimum{0};
+    int m_maximum{0};
+    int m_value{0};
+    int m_singleStep{1};
+    int m_pageStep{0};
+    int m_width{0};
+    int m_height{0};
+    bool m_hidden{false};
 };
 
 }

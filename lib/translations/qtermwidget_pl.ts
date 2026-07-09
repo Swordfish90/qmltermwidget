@@ -4,50 +4,50 @@
 <context>
     <name>Konsole::Session</name>
     <message>
-        <location filename="../Session.cpp" line="454"/>
+        <location filename="../Session.cpp" line="448"/>
         <source>Bell in session &apos;%1&apos;</source>
-        <translation type="unfinished"></translation>
+        <translation>Dzwonek w sesji &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../Session.cpp" line="606"/>
-        <source>Session &apos;%1&apos; exited with status %2.</source>
-        <translation type="unfinished"></translation>
+        <location filename="../Session.cpp" line="630"/>
+        <source>Session &apos;%1&apos; exited with code %2.</source>
+        <translation>Sesja &apos;%1&apos; została zakończona z kodem %2.</translation>
     </message>
     <message>
-        <location filename="../Session.cpp" line="608"/>
+        <location filename="../Session.cpp" line="632"/>
         <source>Session &apos;%1&apos; crashed.</source>
-        <translation type="unfinished"></translation>
+        <translation>Sesja &apos;%1&apos; uległa awarii.</translation>
     </message>
     <message>
-        <location filename="../Session.cpp" line="613"/>
+        <location filename="../Session.cpp" line="637"/>
         <source>Session &apos;%1&apos; exited unexpectedly.</source>
-        <translation type="unfinished"></translation>
+        <translation>Sesja &apos;%1&apos; nieoczekiwanie zakończyła działanie.</translation>
     </message>
 </context>
 <context>
     <name>Konsole::TerminalDisplay</name>
     <message>
-        <location filename="../TerminalDisplay.cpp" line="1279"/>
+        <location filename="../TerminalDisplay.cpp" line="1311"/>
         <source>Size: XXX x XXX</source>
         <translation>Rozmiar: XXX x XXX</translation>
     </message>
     <message>
-        <location filename="../TerminalDisplay.cpp" line="1291"/>
+        <location filename="../TerminalDisplay.cpp" line="1323"/>
         <source>Size: %1 x %2</source>
         <translation>Rozmiar: %1 x %2</translation>
     </message>
     <message>
-        <location filename="../TerminalDisplay.cpp" line="2741"/>
+        <location filename="../TerminalDisplay.cpp" line="2987"/>
         <source>Paste multiline text</source>
-        <translation type="unfinished"></translation>
+        <translation>Wklej wielowierszowy tekst</translation>
     </message>
     <message>
-        <location filename="../TerminalDisplay.cpp" line="2742"/>
+        <location filename="../TerminalDisplay.cpp" line="2988"/>
         <source>Are you sure you want to paste this text?</source>
-        <translation type="unfinished"></translation>
+        <translation>Czy na pewno chcesz wkleić ten tekst?</translation>
     </message>
     <message>
-        <location filename="../TerminalDisplay.cpp" line="3241"/>
+        <location filename="../TerminalDisplay.cpp" line="3459"/>
         <source>&lt;qt&gt;Output has been &lt;a href=&quot;http://en.wikipedia.org/wiki/Flow_control&quot;&gt;suspended&lt;/a&gt; by pressing Ctrl+S.  Press &lt;b&gt;Ctrl+Q&lt;/b&gt; to resume.&lt;/qt&gt;</source>
         <translation>&lt;qt&gt;Wyjście zostało &lt;a href=&quot;http://en.wikipedia.org/wiki/Flow_control&quot;&gt;wstrzymane&lt;/a&gt; skrótem Ctrl+S. Wciśnij &lt;b&gt;Ctrl+Q&lt;/b&gt; aby wznowić.&lt;/qt&gt;</translation>
     </message>
@@ -55,7 +55,7 @@
 <context>
     <name>Konsole::Vt102Emulation</name>
     <message>
-        <location filename="../Vt102Emulation.cpp" line="1121"/>
+        <location filename="../Vt102Emulation.cpp" line="1106"/>
         <source>No keyboard translator available.  The information needed to convert key presses into characters to send to the terminal is missing.</source>
         <translation>Brak sterownika klawiatury. Nie wiadomo jak przełożyć wciśniecia przycisków na znaki wysyłane do terminalu.</translation>
     </message>
@@ -63,41 +63,41 @@
 <context>
     <name>QMessageBox</name>
     <message>
-        <location filename="../TerminalDisplay.cpp" line="2748"/>
+        <location filename="../TerminalDisplay.cpp" line="2994"/>
         <source>Show Details...</source>
-        <translation type="unfinished"></translation>
+        <translation>Pokaż szczegóły...</translation>
     </message>
 </context>
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../ColorScheme.cpp" line="278"/>
-        <location filename="../ColorScheme.cpp" line="293"/>
+        <location filename="../ColorScheme.cpp" line="275"/>
+        <location filename="../ColorScheme.cpp" line="290"/>
         <source>Un-named Color Scheme</source>
         <translation>Nienazwana paleta</translation>
     </message>
     <message>
-        <location filename="../ColorScheme.cpp" line="464"/>
+        <location filename="../ColorScheme.cpp" line="461"/>
         <source>Accessible Color Scheme</source>
         <translation>Paleta o zwiększonej przystępności</translation>
     </message>
     <message>
-        <location filename="../Filter.cpp" line="515"/>
+        <location filename="../Filter.cpp" line="522"/>
         <source>Open Link</source>
         <translation>Przejdź pod adres</translation>
     </message>
     <message>
-        <location filename="../Filter.cpp" line="516"/>
+        <location filename="../Filter.cpp" line="523"/>
         <source>Copy Link Address</source>
         <translation>Kopiuj adres łącza</translation>
     </message>
     <message>
-        <location filename="../Filter.cpp" line="520"/>
+        <location filename="../Filter.cpp" line="527"/>
         <source>Send Email To...</source>
         <translation>Wyślij e-mail do…</translation>
     </message>
     <message>
-        <location filename="../Filter.cpp" line="521"/>
+        <location filename="../Filter.cpp" line="528"/>
         <source>Copy Email Address</source>
         <translation>Kopiuj adres e-mail</translation>
     </message>
@@ -105,12 +105,12 @@
 <context>
     <name>QTermWidget</name>
     <message>
-        <location filename="../qtermwidget.cpp" line="468"/>
+        <location filename="../qtermwidget.cpp" line="465"/>
         <source>Color Scheme Error</source>
         <translation>Błąd w palecie</translation>
     </message>
     <message>
-        <location filename="../qtermwidget.cpp" line="469"/>
+        <location filename="../qtermwidget.cpp" line="466"/>
         <source>Cannot load color scheme: %1</source>
         <translation>Nie można wczytać palety: %1</translation>
     </message>
@@ -118,17 +118,17 @@
 <context>
     <name>SearchBar</name>
     <message>
-        <location filename="../SearchBar.cpp" line="40"/>
+        <location filename="../SearchBar.cpp" line="39"/>
         <source>Match case</source>
         <translation>Rozróżniaj wielkość liter</translation>
     </message>
     <message>
-        <location filename="../SearchBar.cpp" line="46"/>
+        <location filename="../SearchBar.cpp" line="45"/>
         <source>Regular expression</source>
         <translation>Wyrażenie regularne</translation>
     </message>
     <message>
-        <location filename="../SearchBar.cpp" line="50"/>
+        <location filename="../SearchBar.cpp" line="49"/>
         <source>Highlight all matches</source>
         <translation>Podświetl wszystkie dopasowania</translation>
     </message>

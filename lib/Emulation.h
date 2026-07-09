@@ -29,9 +29,9 @@
 // Qt
 #include <QKeyEvent>
 //#include <QPointer>
-#include <QTextCodec>
 #include <QTextStream>
 #include <QTimer>
+#include <QStringDecoder>
 
 #include "KeyboardTranslator.h"
 
@@ -198,20 +198,6 @@ public:
    * used decoder.
    */
   virtual void writeToStream(TerminalCharacterDecoder* decoder);
-
-  /** Returns the codec used to decode incoming characters.  See setCodec() */
-  const QTextCodec* codec() const { return _codec; }
-  /** Sets the codec used to decode incoming characters.  */
-  void setCodec(const QTextCodec*);
-
-  /**
-   * Convenience method.
-   * Returns true if the current codec used to decode incoming
-   * characters is UTF-8
-   */
-  bool utf8() const
-  { Q_ASSERT(_codec); return _codec->mibEnum() == 106; }
-
 
   /** TODO Document me */
   virtual char eraseChar() const;
@@ -492,10 +478,6 @@ protected:
                             //                      scrollbars are not enabled in this mode )
 
 
-  //decodes an incoming C-style character stream into a unicode QString using
-  //the current text codec.  (this allows for rendering of non-ASCII characters in text files etc.)
-  const QTextCodec* _codec;
-  QTextDecoder* _decoder;
   const KeyboardTranslator* _keyTranslator; // the keyboard layout
 
 protected slots:
@@ -519,9 +501,9 @@ private slots:
 private:
   bool _usesMouse;
   bool _bracketedPasteMode;
-  QTimer _bulkTimer1;
-  QTimer _bulkTimer2;
-
+  QTimer _bulkTimer1{this};
+  QTimer _bulkTimer2{this};
+  QStringDecoder _toUtf16;
 };
 
 }

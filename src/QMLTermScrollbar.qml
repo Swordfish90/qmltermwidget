@@ -1,5 +1,5 @@
 import QtQuick 2.0
-import QMLTermWidget 1.0
+import QMLTermWidget 2.0
 
 Item {
     property QMLTermWidget terminal
@@ -28,7 +28,7 @@ Item {
 
     Connections {
         target: terminal
-        onScrollbarValueChanged: showScrollbar();
+        onScrollbarValueChanged: showScrollbar()
     }
 
     Timer {
