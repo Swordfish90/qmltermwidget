@@ -40,6 +40,7 @@ KSession::KSession(QObject *parent) :
     connect(m_session, SIGNAL(started()), this, SIGNAL(started()));
     connect(m_session, SIGNAL(finished()), this, SLOT(sessionFinished()));
     connect(m_session, SIGNAL(titleChanged()), this, SIGNAL(titleChanged()));
+    connect(m_session, SIGNAL(receivedData(const QString &)), this, SIGNAL(receivedData(const QString &)));
 }
 
 KSession::~KSession()
