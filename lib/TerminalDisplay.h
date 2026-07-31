@@ -113,6 +113,7 @@ class KONSOLEPRIVATE_EXPORT TerminalDisplay : public QQuickPaintedItem
    Q_PROPERTY(bool antialiasText        READ antialias       WRITE setAntialias)
    Q_PROPERTY(QStringList availableColorSchemes READ availableColorSchemes NOTIFY availableColorSchemesChanged)
    Q_PROPERTY(bool useFBORendering      READ useFBORendering WRITE setUseFBORendering)
+   Q_PROPERTY(bool clipboardWriteAllowed READ clipboardWriteAllowed WRITE setClipboardWriteAllowed NOTIFY clipboardWriteAllowedChanged)
 
 public:
     /** Constructs a new terminal display widget with the specified parent. */
@@ -215,6 +216,11 @@ public:
     bool blinkingCursor() { return _hasBlinkingCursor; }
     /** Specifies whether or not the cursor blinks. */
     void setBlinkingCursor(bool blink);
+
+    /** Returns true if OSC 52 clipboard writes are honored. */
+    bool clipboardWriteAllowed();
+    /** Enables or disables OSC 52 clipboard write handling. */
+    void setClipboardWriteAllowed(bool allowed);
 
     /** Specifies whether or not text can blink. */
     void setBlinkingTextEnabled(bool blink);
@@ -679,6 +685,7 @@ signals:
     void blinkingCursorStateChanged();
     void boldIntenseChanged();
     void italicEnabledChanged();
+    void clipboardWriteAllowedChanged();
 
 protected:
     bool event( QEvent * ) override;
