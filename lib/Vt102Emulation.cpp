@@ -33,6 +33,8 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QDebug>
+#include <QApplication>
+#include <QClipboard>
 
 // Konsole
 #include "KeyboardTranslator.h"
@@ -40,6 +42,20 @@
 
 
 using namespace Konsole;
+
+// OSC 52 clipboard writes are enabled by default; the settings UI can disable
+// them, in which case the terminal falls back to its default copy behaviour.
+bool Vt102Emulation::_clipboardWriteAllowed = true;
+
+void Vt102Emulation::setClipboardWriteAllowed(bool allowed)
+{
+  _clipboardWriteAllowed = allowed;
+}
+
+bool Vt102Emulation::clipboardWriteAllowed()
+{
+  return _clipboardWriteAllowed;
+}
 
 Vt102Emulation::Vt102Emulation()
     : Emulation(),
@@ -397,6 +413,50 @@ void Vt102Emulation::processWindowAttributeChange()
   if (tokenBuffer[i] != ';')
   {
     reportDecodingError();
+    return;
+  }
+
+  // OSC 52 - set/query the system clipboard: "ESC ] 52 ; Pc ; Pd ST"
+  // Pc = selection targets (c, p, s, ... - ignored here; we always use the
+  // clipboard). Pd = base64-encoded payload, or "?" for a query (ignored).
+  // This lets a remote app (e.g. tmux with set-clipboard on) write to the
+  // local macOS clipboard over SSH.
+  if (attributeToChange == 52)
+  {
+    // Honor the settings toggle: when OSC 52 is disabled, ignore the sequence
+    // entirely so the terminal keeps its default copy behaviour.
+    if (!_clipboardWriteAllowed)
+      return;
+
+    // Skip the selection-target field ("Pc") up to the next ';'.
+    int dataStart = i + 1;
+    while (dataStart < tokenBufferPos && tokenBuffer[dataStart] != ';')
+      dataStart++;
+    if (dataStart >= tokenBufferPos)
+    {
+      reportDecodingError();
+      return;
+    }
+    dataStart++; // step past the ';' separating Pc from Pd
+
+    // Payload runs to the end of the token, minus the ST/BEL terminator char.
+    const int dataLen = tokenBufferPos - dataStart - 1;
+    if (dataLen <= 0)
+      return; // empty or query ("?") - nothing to copy
+
+    const QString base64 = QString::fromWCharArray(tokenBuffer + dataStart, dataLen);
+    if (base64 == QLatin1String("?"))
+      return; // clipboard read requests are intentionally not honored
+
+    const QByteArray decoded =
+        QByteArray::fromBase64(base64.toLatin1(), QByteArray::AbortOnBase64DecodingErrors);
+    if (decoded.isNull())
+    {
+      reportDecodingError();
+      return;
+    }
+
+    QApplication::clipboard()->setText(QString::fromUtf8(decoded), QClipboard::Clipboard);
     return;
   }
 

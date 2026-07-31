@@ -71,6 +71,7 @@
 #include "konsole_wcwidth.h"
 #include "ScreenWindow.h"
 #include "TerminalCharacterDecoder.h"
+#include "Vt102Emulation.h"
 
 using namespace Konsole;
 using namespace Qt::Literals::StringLiterals;
@@ -1387,6 +1388,19 @@ void TerminalDisplay::setBlinkingCursor(bool blink)
     else
       _cursorBlinking = false;
   }
+}
+
+bool TerminalDisplay::clipboardWriteAllowed()
+{
+  return Vt102Emulation::clipboardWriteAllowed();
+}
+
+void TerminalDisplay::setClipboardWriteAllowed(bool allowed)
+{
+  if (Vt102Emulation::clipboardWriteAllowed() == allowed)
+    return;
+  Vt102Emulation::setClipboardWriteAllowed(allowed);
+  emit clipboardWriteAllowedChanged();
 }
 
 void TerminalDisplay::setBlinkingTextEnabled(bool blink)

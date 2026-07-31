@@ -90,6 +90,15 @@ public:
   void reset() override;
   char eraseChar() const override;
 
+  /**
+   * Enables or disables handling of the OSC 52 clipboard escape sequence.
+   * When disabled, OSC 52 sequences are ignored and the terminal falls back
+   * to its default copy behaviour. Applies to all emulation instances.
+   * Enabled by default.
+   */
+  static void setClipboardWriteAllowed(bool allowed);
+  static bool clipboardWriteAllowed();
+
 public slots:
   // reimplemented from Emulation
   void sendString(const char*,int length = -1) override;
@@ -136,7 +145,13 @@ private:
   void resetModes();
 
   void resetTokenizer();
-  #define MAX_TOKEN_LENGTH 256 // Max length of tokens (e.g. window title)
+
+  // Global gate for OSC 52 clipboard writes (toggled from the settings UI).
+  static bool _clipboardWriteAllowed;
+
+  // Large enough to hold an OSC 52 base64 clipboard payload without truncation
+  // (matches xterm's default OSC 52 limit). Window titles etc. are far shorter.
+  #define MAX_TOKEN_LENGTH 100000 // Max length of tokens (e.g. window title)
   void addToCurrentToken(wchar_t cc);
   wchar_t tokenBuffer[MAX_TOKEN_LENGTH]; //FIXME: overflow?
   int tokenBufferPos;
