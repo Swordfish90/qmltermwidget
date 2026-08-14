@@ -31,6 +31,7 @@
 #include <QApplication>
 #include <QGuiApplication>
 #include <QQuickWindow>
+#include <QSGRendererInterface>
 #include <QBoxLayout>
 #include <QClipboard>
 #include <QKeyEvent>
@@ -472,7 +473,10 @@ TerminalDisplay::TerminalDisplay(QQuickItem *parent)
   _scrollBar->setVisible(false);
   connect(_scrollBar, SIGNAL(valueChanged(int)), this, SIGNAL(scrollbarParamsChanged(int)));
 
-  setUseFBORendering(true);
+  // The FramebufferObject paint target exists for OpenGL alone; under any
+  // other scene-graph backend (Vulkan, Metal, D3D) it yields no texture and
+  // the item vanishes, so the Image target takes over there.
+  setUseFBORendering(QQuickWindow::graphicsApi() == QSGRendererInterface::OpenGL);
 
 //  setFocusPolicy( Qt::WheelFocus );
 
