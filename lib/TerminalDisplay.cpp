@@ -466,7 +466,7 @@ TerminalDisplay::TerminalDisplay(QQuickItem *parent)
 
   setAcceptedMouseButtons(Qt::LeftButton);
 
-  setFlags(ItemHasContents | ItemAcceptsInputMethod);
+  setFlags(ItemHasContents | ItemAcceptsInputMethod | ItemAcceptsDrops);
 
     //Setup scrollbar. Be sure it is not darw on screen.
   _scrollBar->setVisible(false);
@@ -3556,35 +3556,13 @@ void TerminalDisplay::dropEvent(QDropEvent* event)
   //KUrl::List urls = KUrl::List::fromMimeData(event->mimeData());
   QList<QUrl> urls = event->mimeData()->urls();
 
-  QString dropText;
   if (!urls.isEmpty())
   {
-      // TODO/FIXME: escape or quote pasted things if necessary...
-      qDebug() << "TerminalDisplay: handling urls. It can be broken. Report any errors, please";
-    for ( int i = 0 ; i < urls.count() ; i++ )
-    {
-        //KUrl url = KIO::NetAccess::mostLocalUrl( urls[i] , 0 );
-        QUrl url = urls[i];
-
-        QString urlText;
-
-        if (url.isLocalFile())
-            urlText = url.path();
-        else
-            urlText = url.toString();
-
-        // in future it may be useful to be able to insert file names with drag-and-drop
-        // without quoting them (this only affects paths with spaces in)
-        //urlText = KShell::quoteArg(urlText);
-
-        QChar q(QLatin1Char('\''));
-        dropText += q + QString(urlText).replace(q, QLatin1String("'\\''")) + q;
-        dropText += QLatin1Char(' ');
-    }
+    insertDroppedUrls(urls);
   }
   else
   {
-    dropText = event->mimeData()->text();
+    QString dropText = event->mimeData()->text();
 
     dropText.replace(QLatin1String("\r\n"), QLatin1String("\n"));
     dropText.replace(QLatin1Char('\n'), QLatin1Char('\r'));
@@ -3600,9 +3578,27 @@ void TerminalDisplay::dropEvent(QDropEvent* event)
         return;
       }
     }
+    emit sendStringToEmu(dropText.toLocal8Bit().constData());
+  }
+  event->acceptProposedAction();
+}
+
+void TerminalDisplay::insertDroppedUrls(const QList<QUrl> &urls)
+{
+  QString dropText;
+  for (const QUrl &url : urls)
+  {
+    const QString path = url.isLocalFile() ? url.toLocalFile() : url.toString();
+    if (path.isEmpty())
+        continue;
+
+    QChar quote(QLatin1Char('\''));
+    dropText += quote + QString(path).replace(quote, QLatin1String("'\\''")) + quote;
+    dropText += QLatin1Char(' ');
   }
 
-  emit sendStringToEmu(dropText.toLocal8Bit().constData());
+  if (!dropText.isEmpty())
+      emit sendStringToEmu(dropText.toLocal8Bit().constData());
 }
 
 void TerminalDisplay::doDrag()
