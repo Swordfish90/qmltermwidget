@@ -28,6 +28,7 @@
 #include <QString>
 #include <QObject>
 #include <QSize>
+#include <QUrl>
 
 // Konsole
 #include "Filter.h"
@@ -539,6 +540,9 @@ public slots:
      * display.
      */
     void pasteSelection();
+
+    /** Inserts shell-quoted paths for files dropped on the visible QML terminal. */
+    void insertDroppedUrls(const QList<QUrl> &urls);
 
     /**
        * Changes whether the flow control warning box should be shown when the flow control
